@@ -90,8 +90,13 @@ public class OidcResource extends BaseResource {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
 
+        long userId = getUserId();
+        if (userId <= 0) {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
+
         String code = sessionManager.issueCode(
-                getUserId(), clientId, target, scope, nonce, codeChallenge, codeChallengeMethod);
+                userId, clientId, target, scope, nonce, codeChallenge, codeChallengeMethod);
 
         UriBuilder redirectBuilder = UriBuilder.fromUri(target).queryParam("code", code);
         if (state != null) {
@@ -132,11 +137,15 @@ public class OidcResource extends BaseResource {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
 
+        User user = permissionsService.getUser(authCode.userId());
+        if (authCode.userId() <= 0 || user == null) {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
+
         String token = tokenManager.generateToken(authCode.userId());
         TokenManager.TokenData tokenData = tokenManager.decodeToken(token);
         long expiresIn = Math.max(0, (tokenData.getExpiration().getTime() - System.currentTimeMillis()) / 1000);
         Set<String> scopes = sessionManager.parseScopes(authCode.scope());
-        User user = permissionsService.getUser(authCode.userId());
         String idToken = sessionManager.generateIdToken(authCode, clientId, tokenData, scopes, user);
 
         Map<String, Object> response = new LinkedHashMap<>();

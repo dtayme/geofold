@@ -13,3 +13,9 @@ build
 .vscode
 bin
 CLAUDE.md
+.claude/
+SECURITY_REVIEW.md
+SECURIITY_REVIEW.md
+docs/security-review.md
+docs/security-test-log.md
+docs/oidc-security-test-log.md
