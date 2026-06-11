@@ -89,6 +89,10 @@ protocol("example") {
     // -----------------------------------------------------------------------
     variant("main") {
 
+        // Optional maximum size for one complete incoming frame. If omitted,
+        // driver.frameMaxLength from traccar.xml is used.
+        maxFrameLength 2048
+
         // Use newline framing (strip trailing \r).
         frame readLine()
 
@@ -282,6 +286,9 @@ protocol("mybin") {
     port 5098
 
     variant("main") {
+
+        // Batch/binary protocols can opt into a larger frame limit when needed.
+        maxFrameLength 65536
 
         // 0x78 start byte; length field at offset 2 (after 2 start bytes),
         // 2 bytes wide; +1 for a checksum byte not counted by the length field.

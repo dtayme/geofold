@@ -40,6 +40,7 @@ protocol("gt30") {
 
     variant("main") {
 
+        maxFrameLength 256
         frame readLine()
 
         matches { msg -> msg.startsWith('$$') }

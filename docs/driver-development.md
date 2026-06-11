@@ -1,8 +1,9 @@
 # Driver Development Guide
 
 Drivers are Groovy scripts that teach the server how to speak a specific GPS tracker
-protocol. Dropping a `.groovy` file into the `drivers/` directory is all that is
-needed — no Java, no recompile, no restart.
+protocol. Dropping a `.groovy` file into the `drivers/` directory registers the
+script for review. The script is not compiled or executed until an administrator
+enables that exact file hash.
 
 ## Quick-start
 
@@ -12,9 +13,10 @@ traccar/
     mydevice.groovy   ← create this file
 ```
 
-The server loads every `.groovy` file in the `drivers/` directory at startup and
-watches for changes. Saving a file hot-reloads that driver without disrupting any
-other connections.
+The server watches every `.groovy` file in the `drivers/` directory. New and
+changed files are registered in `/api/driver-scripts` with a SHA-256 hash and
+remain disabled by default. Once an administrator enables a registered hash, the
+server loads that script without a restart.
 
 ---
 
@@ -100,6 +102,37 @@ frame 0x78 as byte, readLengthField(2, 2, 1)   // 2-byte header, 2-byte length, 
 ```
 
 `fieldWidth` must be 1, 2, or 4 bytes.
+
+### Maximum frame length
+
+All driver frames are bounded to prevent unauthenticated clients from growing
+decoder buffers indefinitely. The default maximum is configured with:
+
+```xml
+<entry key='driver.frameMaxLength'>8192</entry>
+```
+
+The value must be a positive byte count.
+
+Each variant can override the default when a protocol legitimately needs larger
+or smaller frames:
+
+```groovy
+variant("main") {
+    maxFrameLength 2048
+    frame '*' as char, readUntil('#')
+}
+
+variant("batch") {
+    maxFrameLength 65536
+    frame 0x78 as byte, readLengthField(2, 2, 1)
+}
+```
+
+The limit is enforced for newline-delimited frames, arbitrary terminators, fixed
+binary frames, and length-field frames. If a text frame grows past the limit
+before its delimiter arrives, or if a binary frame declares a size above the
+limit, the frame decoder rejects it.
 
 ### Byte hints and fallback
 
@@ -550,15 +583,35 @@ pos.set(Position.PREFIX_IN   + '1', true)   // digital input 1 state
 
 ---
 
-## Hot-reload
+## Approval and hot-reload
 
 The server watches the `drivers/` directory. Saving a `.groovy` file:
-- **creates** a new driver or replaces an existing one (connections on that port
-  will use the new definition from the next message)
-- **deletes** a `.groovy` file to unload that driver
+- **registers** a new `filename + SHA-256 hash` row in `tc_driver_scripts`
+- leaves that row disabled by default
+- unloads any previously loaded driver for that file when the file changes
+- requires the new hash to be enabled before the updated script is compiled
 
-No restart required. Syntax errors in the updated file are logged and the old
-definition continues to serve until the file is fixed.
+Deleting a `.groovy` file unloads that driver. The registration history remains
+in the database.
+
+Administrators can review and enable registered driver script hashes through:
+
+```text
+GET  /api/driver-scripts
+POST /api/driver-scripts/{id}/enable
+POST /api/driver-scripts/{id}/disable
+```
+
+Approval is hash-bound. Enabling `mydevice.groovy` only enables the exact file
+contents that produced the registered hash. If the file is edited later, the
+hash changes and the new version must be enabled separately.
+
+Syntax errors in an enabled file are logged and stored on the registered
+`DriverScript` record. The broken hash is not loaded.
+
+This approval gate prevents a newly dropped or modified script from executing
+silently. It is not a sandbox: enabled Groovy code still runs inside the Traccar
+JVM with the Traccar service account privileges.
 
 ---
 

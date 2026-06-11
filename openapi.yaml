@@ -65,6 +65,8 @@ tags:
     description: Computed attributes management
   - name: Drivers
     description: Drivers management
+  - name: Driver Scripts
+    description: Driver script approval management
   - name: Maintenance
     description: Maintenance management
   - name: Calendars
@@ -2366,6 +2368,65 @@ paths:
         '204':
           description: No Content
           content: {}
+  /driver-scripts:
+    get:
+      summary: Fetch registered driver scripts
+      description: Admin-only list of discovered Groovy driver script file hashes and approval state.
+      tags:
+        - Driver Scripts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriverScript'
+  /driver-scripts/{id}/enable:
+    post:
+      summary: Enable a driver script hash
+      description: Admin-only approval for the exact registered filename and SHA-256 hash.
+      tags:
+        - Driver Scripts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverScript'
+        '404':
+          description: Not Found
+          content: {}
+  /driver-scripts/{id}/disable:
+    post:
+      summary: Disable a driver script hash
+      description: Admin-only removal of approval for a registered driver script hash.
+      tags:
+        - Driver Scripts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverScript'
+        '404':
+          description: Not Found
+          content: {}
   /maintenance:
     get:
       summary: Fetch a list of Maintenance
@@ -3201,6 +3262,37 @@ components:
           type: object
           properties: {}
           description: Custom driver attributes
+    DriverScript:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique driver script registration identifier
+        fileName:
+          type: string
+          description: Driver script file name
+        hash:
+          type: string
+          description: SHA-256 hash of the registered script contents
+        enabled:
+          type: boolean
+          description: Whether this exact filename and hash is approved for execution
+        discoveredTime:
+          type: string
+          format: date-time
+          description: Time when this script hash was first discovered
+        lastSeenTime:
+          type: string
+          format: date-time
+          description: Time when this script hash was most recently seen on disk
+        loadedTime:
+          type: string
+          format: date-time
+          description: Time when this script hash was last loaded successfully
+        error:
+          type: string
+          description: Last load error for this script hash
     Maintenance:
       type: object
       properties:

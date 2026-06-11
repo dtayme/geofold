@@ -79,14 +79,16 @@ Adding or changing a Java protocol usually affects:
 
 Location: `src/main/java/org/traccar/driver`
 
-This fork adds a script-based driver system for implementing tracker protocols as `.groovy` files in `drivers/` without Java changes or restarts. The detailed authoring reference is `docs/driver-development.md`.
+This fork adds a script-based driver system for implementing tracker protocols as `.groovy` files in `drivers/` without Java changes. The detailed authoring reference is `docs/driver-development.md`.
 
 Core responsibilities:
 
-- `DriverRegistry` loads scripts from `drivers/`, caches `DriverDefinition` instances, and hot-reloads created, modified, or deleted `.groovy` files.
+- `DriverRegistry` discovers scripts from `drivers/`, stores filename and SHA-256 hash records in `tc_driver_scripts`, and only compiles hashes that administrators have enabled.
+- `DriverScriptResource` exposes admin-only `/api/driver-scripts` endpoints to list, enable, and disable registered script hashes.
+- Approved scripts are cached as `DriverDefinition` instances; modified scripts are unloaded and re-registered under their new hash.
 - `DriverDSL`, `ProtocolBuilder`, `VariantBuilder`, `FrameSpec`, and `AlarmMapBuilder` define the Groovy authoring API.
 - `DriverProtocol` exposes a normal Traccar protocol entry point backed by one TCP and one UDP server.
-- `DriverFrameDecoder` extracts TCP frames and uses first-byte hints to select text or binary framing.
+- `DriverFrameDecoder` extracts TCP frames, enforces the configured or per-variant maximum frame length, and uses first-byte hints to select text or binary framing.
 - `DriverMessageAdapter` converts extracted frames to `String` for text variants or `BufReader` for binary variants.
 - `DriverProtocolDecoder` invokes the selected variant's decode closure and returns positions.
 - `DriverProtocolEncoder` invokes encode closures for outbound commands.
@@ -365,4 +367,3 @@ Use this map to find the first files to inspect:
 | Notification delivery issue | `NotificationManager`, `notification`, `notificators` |
 | Web server behavior | `WebServer`, `WebModule`, servlet filters |
 | Provider integration | provider package plus `MainModule` binding |
-

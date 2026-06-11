@@ -47,6 +47,9 @@ protocol("tlt2h") {
 
     variant("main") {
 
+        // Batch-upload frame: one header line + N position records, each ~100 bytes.
+        // 16 KB allows ~150 records, covering typical offline-buffering scenarios.
+        maxFrameLength 16384
         // Frame ends with ##\r\n; the \r\n after ## is skipped by the frame decoder
         frame '#' as char, readUntil('##')
 

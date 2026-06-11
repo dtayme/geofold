@@ -14,6 +14,7 @@ public final class VariantDefinition {
     private final String name;
     private FrameSpec frameSpec;
     private Byte frameByteHint;     // first byte that selects this variant's frame spec (null = default/fallback)
+    private Integer maxFrameLength;
     private Closure<Boolean> matchClosure;
     private Closure<String> modelClosure;
     private Closure<Object> decodeClosure;
@@ -44,6 +45,14 @@ public final class VariantDefinition {
 
     public void setFrameByteHint(Byte frameByteHint) {
         this.frameByteHint = frameByteHint;
+    }
+
+    public Integer getMaxFrameLength() {
+        return maxFrameLength;
+    }
+
+    public void setMaxFrameLength(Integer maxFrameLength) {
+        this.maxFrameLength = maxFrameLength;
     }
 
     public Closure<Boolean> getMatchClosure() {

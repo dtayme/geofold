@@ -102,6 +102,8 @@ protocol("h02") {
     // -----------------------------------------------------------------------
     variant("text") {
 
+        // Worst case: NBR with many cell towers or SMS with long text, ~600 bytes.
+        maxFrameLength 2048
         frame '*' as char, readUntil('#')
 
         matches { msg -> msg.startsWith('*') }

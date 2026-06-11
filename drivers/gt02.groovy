@@ -32,6 +32,8 @@ protocol("gt02") {
         // Header byte 0x54 ('T'); size field at offset 2, 1 byte wide;
         // adjustment +2 because the size value does not count the 2 bytes after it.
         // Total frame = 2 (header) + 1 (size byte) + size_value + 2 = size_value + 5.
+        // size_value is 1-byte unsigned (0–255), so the maximum possible frame is 260 bytes.
+        maxFrameLength 260
         frame 0x54 as byte, readLengthField(2, 1, 2)
 
         // No matches closure — binary variants are identified by frameByteHint only.

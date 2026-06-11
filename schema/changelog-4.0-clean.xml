@@ -155,6 +155,30 @@
       </column>
     </createTable>
 
+    <createTable tableName="tc_driver_scripts">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" />
+      </column>
+      <column name="filename" type="VARCHAR(256)">
+        <constraints nullable="false" />
+      </column>
+      <column name="hash" type="VARCHAR(64)">
+        <constraints nullable="false" />
+      </column>
+      <column name="enabled" type="BOOLEAN" defaultValueBoolean="false">
+        <constraints nullable="false" />
+      </column>
+      <column name="discoveredtime" type="TIMESTAMP" />
+      <column name="lastseentime" type="TIMESTAMP" />
+      <column name="loadedtime" type="TIMESTAMP" />
+      <column name="error" type="VARCHAR(1024)" />
+    </createTable>
+
+    <createIndex tableName="tc_driver_scripts" indexName="idx_driver_scripts_file_hash" unique="true">
+      <column name="filename" />
+      <column name="hash" />
+    </createIndex>
+
     <createTable tableName="tc_events">
       <column name="id" type="INT" autoIncrement="true">
         <constraints primaryKey="true" />

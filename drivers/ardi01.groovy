@@ -23,6 +23,7 @@ protocol("ardi01") {
 
     variant("main") {
 
+        maxFrameLength 256
         frame readLine()
 
         matches { msg -> msg =~ /^\d{10,15},\d{14},/ }

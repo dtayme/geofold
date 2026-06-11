@@ -4,18 +4,30 @@ import groovy.lang.GroovyClassLoader;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.traccar.helper.DataConverter;
+import org.traccar.model.DriverScript;
+import org.traccar.storage.Storage;
+import org.traccar.storage.StorageException;
+import org.traccar.storage.query.Columns;
+import org.traccar.storage.query.Condition;
+import org.traccar.storage.query.Request;
 
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,9 +44,13 @@ public class DriverRegistry {
     private static final String DRIVERS_DIR = "drivers";
 
     private final Map<String, DriverDefinition> drivers = new ConcurrentHashMap<>();
+    private final Map<String, String> driverFiles = new ConcurrentHashMap<>();
     private final CompilerConfiguration compilerConfig;
+    private final Storage storage;
 
-    public DriverRegistry() {
+    @Inject
+    public DriverRegistry(Storage storage) {
+        this.storage = storage;
         compilerConfig = new CompilerConfiguration();
         compilerConfig.setScriptBaseClass(DriverDSL.class.getName());
 
@@ -59,6 +75,18 @@ public class DriverRegistry {
     /** Returns the driver with the given name, or null. */
     public DriverDefinition get(String name) {
         return drivers.get(name);
+    }
+
+    public void reload(String fileName) {
+        File file = new File(DRIVERS_DIR, new File(fileName).getName());
+        unloadFile(file.getName());
+        if (file.isFile()) {
+            loadFile(file);
+        }
+    }
+
+    public void unload(String fileName) {
+        unloadFile(new File(fileName).getName());
     }
 
     /**
@@ -91,8 +119,17 @@ public class DriverRegistry {
     }
 
     private void loadFile(File file) {
+        unloadFile(file.getName());
+        DriverScript driverScript;
         try (GroovyClassLoader gcl = new GroovyClassLoader(
                 Thread.currentThread().getContextClassLoader(), compilerConfig)) {
+            driverScript = registerFile(file);
+            if (!driverScript.getEnabled()) {
+                LOGGER.info("Driver script {} with hash {} is pending approval",
+                        driverScript.getFileName(), driverScript.getHash());
+                return;
+            }
+
             Class<?> scriptClass = gcl.parseClass(file);
             DriverDSL script = (DriverDSL) scriptClass.getDeclaredConstructor().newInstance();
             script.run();
@@ -102,22 +139,67 @@ public class DriverRegistry {
                 return;
             }
             drivers.put(def.getName(), def);
+            driverFiles.put(file.getName(), def.getName());
+            markLoaded(driverScript, null);
             LOGGER.info("Loaded driver '{}' from {}", def.getName(), file.getName());
         } catch (Exception e) {
+            try {
+                driverScript = registerFile(file);
+                markLoaded(driverScript, e.getMessage());
+            } catch (Exception nested) {
+                LOGGER.warn("Failed to update driver script registry for {}", file.getName(), nested);
+            }
             LOGGER.error("Failed to load driver script {}: {}", file.getName(), e.getMessage(), e);
         }
     }
 
+    private DriverScript registerFile(File file) throws IOException, StorageException, NoSuchAlgorithmException {
+        String fileName = file.getName();
+        String hash = calculateHash(file.toPath());
+        Date now = new Date();
+
+        DriverScript driverScript = storage.getObject(DriverScript.class, new Request(
+                new Columns.All(),
+                new Condition.And(
+                        new Condition.Equals("fileName", fileName),
+                        new Condition.Equals("hash", hash))));
+        if (driverScript == null) {
+            driverScript = new DriverScript();
+            driverScript.setFileName(fileName);
+            driverScript.setHash(hash);
+            driverScript.setEnabled(false);
+            driverScript.setDiscoveredTime(now);
+            driverScript.setLastSeenTime(now);
+            driverScript.setId(storage.addObject(driverScript, new Request(new Columns.Exclude("id"))));
+        } else {
+            driverScript.setLastSeenTime(now);
+            storage.updateObject(driverScript, new Request(
+                    new Columns.Include("lastSeenTime"),
+                    new Condition.Equals("id", driverScript.getId())));
+        }
+        return driverScript;
+    }
+
+    private void markLoaded(DriverScript driverScript, String error) throws StorageException {
+        driverScript.setLoadedTime(error == null ? new Date() : null);
+        driverScript.setError(error);
+        storage.updateObject(driverScript, new Request(
+                new Columns.Include("loadedTime", "error"),
+                new Condition.Equals("id", driverScript.getId())));
+    }
+
+    private String calculateHash(Path path) throws IOException, NoSuchAlgorithmException {
+        return DataConverter.printHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
+    }
+
     private void unloadFile(String fileName) {
-        // Remove by matching the file name stem to the driver name
-        String stem = fileName.replaceFirst("\\.groovy$", "");
-        drivers.entrySet().removeIf(entry -> {
-            if (entry.getKey().equals(stem)) {
-                LOGGER.info("Unloaded driver '{}'", entry.getKey());
-                return true;
-            }
-            return false;
-        });
+        String driverName = driverFiles.remove(fileName);
+        if (driverName == null) {
+            driverName = fileName.replaceFirst("\\.groovy$", "");
+        }
+        if (drivers.remove(driverName) != null) {
+            LOGGER.info("Unloaded driver '{}'", driverName);
+        }
     }
 
     // -------------------------------------------------------------------------

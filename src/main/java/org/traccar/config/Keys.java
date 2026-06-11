@@ -185,6 +185,15 @@ public final class Keys {
             List.of(KeyType.CONFIG));
 
     /**
+     * Default maximum frame length for Groovy driver scripts. Individual driver variants can override this
+     * using the maxFrameLength DSL setting.
+     */
+    public static final ConfigKey<Integer> DRIVER_FRAME_MAX_LENGTH = new IntegerConfigKey(
+            "driver.frameMaxLength",
+            List.of(KeyType.CONFIG),
+            8192);
+
+    /**
      * Alarm mapping for Atrack protocol.
      */
     public static final ConfigSuffix<String> PROTOCOL_ALARM_MAP = new StringConfigSuffix(

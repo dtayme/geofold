@@ -76,6 +76,8 @@ protocol("mictrack") {
     // HQ variant — MT532 and compatible (*HQ,...# framing)
     // -----------------------------------------------------------------------
     variant("hq") {
+        // Longest message: V6 with ICCID, ~200 bytes.
+        maxFrameLength 512
         frame '*' as char, readUntil('#')
         matches { msg -> msg.startsWith("*HQ,") }
 
@@ -153,6 +155,8 @@ protocol("mictrack") {
     // MT700 variant — MT700/MT700W/MT600/MT530 (#IMEI#MODEL#...## framing)
     // -----------------------------------------------------------------------
     variant("mt700") {
+        // Multi-line frame; WIFI variant with many APs can reach ~1 KB.
+        maxFrameLength 2048
         frame '#' as char, readUntil('##')
         matches { msg -> msg.startsWith("#") && msg.contains("#MT") }
         model   { msg -> msg.split("#")[2] }   // "MT700", "MT600", etc.

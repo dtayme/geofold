@@ -72,6 +72,8 @@ protocol("laipac") {
 
     variant("main") {
 
+        // Longest message: $AVRMC with optional cell tower, ~250 bytes.
+        maxFrameLength 512
         frame readLine()
 
         matches { msg -> msg.startsWith('$ECHK') || msg.startsWith('$EAVSYS') || msg.startsWith('$AVRMC') }

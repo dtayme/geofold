@@ -38,6 +38,14 @@ public final class VariantBuilder {
         variant.setFrameSpec(spec);
     }
 
+    /** Override the configured default maximum frame length for this variant. */
+    public void maxFrameLength(int maxFrameLength) {
+        if (maxFrameLength <= 0) {
+            throw new IllegalArgumentException("Maximum frame length must be positive");
+        }
+        variant.setMaxFrameLength(maxFrameLength);
+    }
+
     @SuppressWarnings("unchecked")
     public void matches(Closure<?> closure) {
         variant.setMatchClosure((Closure<Boolean>) closure);

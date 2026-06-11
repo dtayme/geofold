@@ -3,6 +3,8 @@ package org.traccar.driver;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.CorruptedFrameException;
+import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.AttributeKey;
 
 import java.util.List;
@@ -27,9 +29,14 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
     public static final AttributeKey<String> VARIANT_KEY = AttributeKey.valueOf("driver.variant");
 
     private final DriverRegistry registry;
+    private final int defaultMaxFrameLength;
 
-    public DriverFrameDecoder(DriverRegistry registry) {
+    public DriverFrameDecoder(DriverRegistry registry, int defaultMaxFrameLength) {
+        if (defaultMaxFrameLength <= 0) {
+            throw new IllegalArgumentException("Default maximum frame length must be positive");
+        }
         this.registry = registry;
+        this.defaultMaxFrameLength = defaultMaxFrameLength;
     }
 
     @Override
@@ -41,6 +48,7 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
         byte first = buf.getByte(buf.readerIndex());
         SpecMatch match = resolveMatch(first);
         FrameSpec spec = match != null ? match.spec() : FrameSpec.readLine();
+        int maxFrameLength = maxFrameLength(match);
 
         // Set channel attrs now for binary variants so DriverMessageAdapter can
         // determine the correct conversion before the next handler runs.
@@ -54,9 +62,12 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                 byte[] term = spec.getTerminator();
                 int end = findSequence(buf, term);
                 if (end < 0) {
+                    checkCumulationLength(buf, maxFrameLength);
                     return;
                 }
-                out.add(buf.readRetainedSlice(end - buf.readerIndex()));
+                int frameLength = end - buf.readerIndex();
+                checkFrameLength(frameLength, maxFrameLength);
+                out.add(buf.readRetainedSlice(frameLength));
                 buf.skipBytes(term.length);
                 while (buf.isReadable()
                         && (buf.getByte(buf.readerIndex()) == '\r'
@@ -67,9 +78,11 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
             case READ_LINE -> {
                 int end = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '\n');
                 if (end < 0) {
+                    checkCumulationLength(buf, maxFrameLength);
                     return;
                 }
                 int length = end - buf.readerIndex();
+                checkFrameLength(length, maxFrameLength);
                 if (length > 0 && buf.getByte(buf.readerIndex() + length - 1) == '\r') {
                     out.add(buf.readRetainedSlice(length - 1));
                     buf.skipBytes(2);
@@ -80,6 +93,7 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
             }
             case READ_FIXED -> {
                 int size = spec.getSize();
+                checkFrameLength(size, maxFrameLength);
                 if (buf.readableBytes() < size) {
                     return;
                 }
@@ -90,14 +104,19 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                 int lfl = spec.getLengthFieldLength();
                 int adj = spec.getLengthAdjustment();
                 if (buf.readableBytes() < lfo + lfl) {
+                    checkCumulationLength(buf, maxFrameLength);
                     return;
                 }
                 long fieldValue = readLengthFieldValue(buf, lfo, lfl);
-                int totalSize = lfo + lfl + (int) fieldValue + adj;
-                if (totalSize <= 0 || buf.readableBytes() < totalSize) {
+                long totalSize = (long) lfo + lfl + fieldValue + adj;
+                if (totalSize <= 0) {
+                    throw new CorruptedFrameException("Invalid driver frame length: " + totalSize);
+                }
+                checkFrameLength(totalSize, maxFrameLength);
+                if (buf.readableBytes() < totalSize) {
                     return;
                 }
-                out.add(buf.readRetainedSlice(totalSize));
+                out.add(buf.readRetainedSlice((int) totalSize));
             }
             default -> buf.skipBytes(buf.readableBytes());
         }
@@ -129,6 +148,26 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
         }
 
         return fallback;
+    }
+
+    private int maxFrameLength(SpecMatch match) {
+        if (match != null && match.variant().getMaxFrameLength() != null) {
+            return match.variant().getMaxFrameLength();
+        }
+        return defaultMaxFrameLength;
+    }
+
+    private void checkCumulationLength(ByteBuf buf, int maxFrameLength) {
+        if (buf.readableBytes() > maxFrameLength) {
+            throw new TooLongFrameException("Driver frame exceeded maximum length of " + maxFrameLength);
+        }
+    }
+
+    private void checkFrameLength(long frameLength, int maxFrameLength) {
+        if (frameLength > maxFrameLength) {
+            throw new TooLongFrameException(
+                    "Driver frame length " + frameLength + " exceeds maximum length of " + maxFrameLength);
+        }
     }
 
     private long readLengthFieldValue(ByteBuf buf, int offset, int length) {
