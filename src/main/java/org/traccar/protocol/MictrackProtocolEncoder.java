@@ -20,9 +20,9 @@ import org.traccar.BaseProtocolEncoder;
 import org.traccar.Protocol;
 import org.traccar.model.Command;
 
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class MictrackProtocolEncoder extends BaseProtocolEncoder {
 
@@ -33,27 +33,27 @@ public class MictrackProtocolEncoder extends BaseProtocolEncoder {
         super(protocol);
     }
 
-    private String hqFormat(Command command, String cmd, String... params) {
+    private String hqFormat(Command command, Date time, String cmd, String... params) {
         String id = getUniqueId(command.getDeviceId());
-        String base = String.format("*HQ,%s,%s,%s", id, cmd, UTC_TIME.format(Instant.now()));
+        String base = String.format("*HQ,%s,%s,%s", id, cmd, UTC_TIME.format(time.toInstant()));
         if (params.length > 0) {
             base += "," + String.join(",", params);
         }
         return base + "#";
     }
 
-    private Object encodeHQCommand(Command command) {
+    protected Object encodeCommand(Command command, Date time) {
         return switch (command.getType()) {
             case Command.TYPE_CUSTOM ->
-                    hqFormat(command, (String) command.getAttributes().get(Command.KEY_DATA));
+                    hqFormat(command, time, (String) command.getAttributes().get(Command.KEY_DATA));
             case Command.TYPE_POSITION_PERIODIC -> {
                 int interval = ((Number) command.getAttributes().get(Command.KEY_FREQUENCY)).intValue();
-                yield hqFormat(command, "D1", String.valueOf(interval), "1");
+                yield hqFormat(command, time, "D1", String.valueOf(interval), "1");
             }
-            case Command.TYPE_ENGINE_STOP -> hqFormat(command, "S20", "1", "1");
-            case Command.TYPE_ENGINE_RESUME -> hqFormat(command, "S20", "0", "0");
-            case Command.TYPE_ALARM_ARM -> hqFormat(command, "SF", "0", "0");
-            case Command.TYPE_ALARM_DISARM -> hqFormat(command, "CF", "1", "1");
+            case Command.TYPE_ENGINE_STOP -> hqFormat(command, time, "S20", "1", "1");
+            case Command.TYPE_ENGINE_RESUME -> hqFormat(command, time, "S20", "0", "0");
+            case Command.TYPE_ALARM_ARM -> hqFormat(command, time, "SF", "0", "0");
+            case Command.TYPE_ALARM_DISARM -> hqFormat(command, time, "CF", "1", "1");
             default -> null;
         };
     }
@@ -85,9 +85,14 @@ public class MictrackProtocolEncoder extends BaseProtocolEncoder {
     }
 
     @Override
+    protected Object encodeCommand(Command command) {
+        return encodeMT700Command(command);
+    }
+
+    @Override
     protected Object encodeCommand(Channel channel, Command command) {
         String variant = channel != null ? channel.attr(MictrackProtocolDecoder.VARIANT_KEY).get() : null;
-        return "hq".equals(variant) ? encodeHQCommand(command) : encodeMT700Command(command);
+        return "hq".equals(variant) ? encodeCommand(command, new Date()) : encodeMT700Command(command);
     }
 
 }
