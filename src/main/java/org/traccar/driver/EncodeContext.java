@@ -1,5 +1,6 @@
 package org.traccar.driver;
 
+import org.traccar.helper.model.AttributeUtil;
 import org.traccar.model.Command;
 
 import java.time.ZoneOffset;
@@ -8,11 +9,13 @@ import java.util.Date;
 
 /**
  * Passed as the second argument to a variant's {@code encode} closure.
- * Provides formatting helpers so driver scripts don't need boilerplate.
+ * Provides formatting helpers and per-device lookups so driver scripts
+ * don't need boilerplate.
  *
  * <p>Typical usage inside a driver script:
  * <pre>
  * encode { cmd, ctx ->
+ *     def pwd = ctx.devicePassword('00000000')
  *     switch (cmd.type) {
  *         case TYPE_ENGINE_STOP: return "*HQ,${ctx.deviceId()},S20,${ctx.utcTime()},1,1#"
  *         case TYPE_REBOOT_DEVICE: return "REBOOT"
@@ -70,5 +73,43 @@ public final class EncodeContext {
     /** Clamps {@code value} to {@code [min, max]}. */
     public long clamp(long value, long min, long max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    // -------------------------------------------------------------------------
+    // Per-device lookups
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the device password, walking the device → group → server →
+     * config hierarchy (via {@link AttributeUtil#getDevicePassword}).
+     * Falls back to {@code defaultPassword} if nothing is configured.
+     *
+     * <p>Example: {@code ctx.devicePassword('00000000')}
+     */
+    public String devicePassword(String defaultPassword) {
+        return AttributeUtil.getDevicePassword(
+                encoder.getCacheManager(),
+                command.getDeviceId(),
+                encoder.getProtocolName(),
+                defaultPassword);
+    }
+
+    /**
+     * Returns the device model string (e.g. {@code "MT700"}), or {@code null}
+     * if not set on the device record.
+     */
+    public String deviceModel() {
+        return encoder.getDeviceModel(command.getDeviceId());
+    }
+
+    /**
+     * Returns a {@link DeviceAttrs} for finer-grained per-device attribute
+     * access (password, model, arbitrary keys).
+     */
+    public DeviceAttrs deviceAttrs() {
+        return new DeviceAttrs(
+                encoder.getCacheManager(),
+                command.getDeviceId(),
+                encoder.getProtocolName());
     }
 }

@@ -1,6 +1,5 @@
 package org.traccar.driver;
 
-import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import org.traccar.BaseProtocol;
 import org.traccar.PipelineBuilder;
@@ -15,6 +14,16 @@ import jakarta.inject.Singleton;
  * One TCP server (with frame detection) and one UDP server (already packetized)
  * both funnel into {@link DriverProtocolDecoder} which dispatches to the
  * matching driver script at runtime.
+ *
+ * <p>Pipeline (TCP):
+ * <pre>
+ *   DriverFrameDecoder → StringEncoder → DriverMessageAdapter
+ *       → DriverProtocolEncoder → DriverProtocolDecoder
+ * </pre>
+ *
+ * {@link DriverMessageAdapter} replaces Netty's {@code StringDecoder}: it converts
+ * each extracted frame to a {@code String} for text variants or a {@link BufReader}
+ * for binary variants (determined by the channel attrs set by {@link DriverFrameDecoder}).
  */
 @Singleton
 public class DriverProtocol extends BaseProtocol {
@@ -26,7 +35,7 @@ public class DriverProtocol extends BaseProtocol {
             protected void addProtocolHandlers(PipelineBuilder pipeline, Config config) {
                 pipeline.addLast(new DriverFrameDecoder(registry));
                 pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new DriverMessageAdapter(registry));
                 pipeline.addLast(new DriverProtocolEncoder(DriverProtocol.this, registry));
                 pipeline.addLast(new DriverProtocolDecoder(DriverProtocol.this, registry));
             }
@@ -35,7 +44,7 @@ public class DriverProtocol extends BaseProtocol {
             @Override
             protected void addProtocolHandlers(PipelineBuilder pipeline, Config config) {
                 pipeline.addLast(new StringEncoder());
-                pipeline.addLast(new StringDecoder());
+                pipeline.addLast(new DriverMessageAdapter(registry));
                 pipeline.addLast(new DriverProtocolEncoder(DriverProtocol.this, registry));
                 pipeline.addLast(new DriverProtocolDecoder(DriverProtocol.this, registry));
             }

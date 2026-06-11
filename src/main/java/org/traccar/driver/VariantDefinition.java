@@ -82,6 +82,14 @@ public final class VariantDefinition {
         return alarmMap;
     }
 
+    /**
+     * Returns {@code true} if this variant uses a binary framing mode and
+     * expects a {@link BufReader} rather than a {@code String} in its decode closure.
+     */
+    public boolean isBinary() {
+        return frameSpec != null && frameSpec.isBinary();
+    }
+
     /** Returns true if this variant handles the given raw message string. */
     public boolean matches(String message) {
         if (matchClosure == null) {

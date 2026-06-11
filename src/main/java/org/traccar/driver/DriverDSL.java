@@ -72,6 +72,7 @@ public abstract class DriverDSL extends Script {
     // Command type constants — re-exported so scripts need no imports
     // -------------------------------------------------------------------------
     public static final String TYPE_CUSTOM             = Command.TYPE_CUSTOM;
+    public static final String TYPE_POSITION_SINGLE    = Command.TYPE_POSITION_SINGLE;
     public static final String TYPE_POSITION_PERIODIC  = Command.TYPE_POSITION_PERIODIC;
     public static final String TYPE_ENGINE_STOP        = Command.TYPE_ENGINE_STOP;
     public static final String TYPE_ENGINE_RESUME      = Command.TYPE_ENGINE_RESUME;
@@ -86,14 +87,63 @@ public abstract class DriverDSL extends Script {
     public static final String TYPE_IDENTIFICATION     = Command.TYPE_IDENTIFICATION;
 
     // -------------------------------------------------------------------------
+    // Binary helper — used inside decode { buf, ctx -> } closures
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns {@code true} if bit {@code bit} is set in {@code value} (bit 0 = LSB).
+     * Re-exported from {@link BufReader} so binary decode closures need no import.
+     *
+     * <p>Example: {@code if (checkBit(flags, 2)) pos.valid = true}
+     */
+    public static boolean checkBit(int value, int bit) {
+        return BufReader.checkBit(value, bit);
+    }
+
+    // -------------------------------------------------------------------------
     // FrameSpec factory helpers — used inside variant { frame ... } blocks
     // -------------------------------------------------------------------------
+
+    /** Text: scan for {@code terminator} bytes (e.g. {@code readUntil("##")}). */
     public static FrameSpec readUntil(String terminator) {
         return FrameSpec.readUntil(terminator);
     }
 
+    /** Text: scan for newline, strip trailing CR. */
     public static FrameSpec readLine() {
         return FrameSpec.readLine();
+    }
+
+    /**
+     * Binary: always read exactly {@code size} bytes per frame.
+     *
+     * <p>Example: {@code frame 0x78 as byte, readFixed(32)}
+     */
+    public static FrameSpec readFixed(int size) {
+        return FrameSpec.readFixed(size);
+    }
+
+    /**
+     * Binary: read a length field at {@code offset} bytes in, {@code length}
+     * bytes wide (1, 2, or 4). Total frame =
+     * {@code offset + length + fieldValue}.
+     *
+     * <p>Example: {@code frame 0x7e as byte, readLengthField(3, 2)}
+     */
+    public static FrameSpec readLengthField(int offset, int length) {
+        return FrameSpec.readLengthField(offset, length);
+    }
+
+    /**
+     * Binary: like {@link #readLengthField(int, int)} but adds
+     * {@code adjustment} extra bytes after the field value.
+     * Total frame = {@code offset + length + fieldValue + adjustment}.
+     *
+     * <p>Example — 2-byte header, 2-byte length, 1-byte checksum:
+     * {@code frame 0x78 as byte, readLengthField(2, 2, 1)}
+     */
+    public static FrameSpec readLengthField(int offset, int length, int adjustment) {
+        return FrameSpec.readLengthField(offset, length, adjustment);
     }
 
     // -------------------------------------------------------------------------

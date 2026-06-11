@@ -18,9 +18,23 @@ public final class VariantBuilder {
         variant.setFrameSpec(spec);
     }
 
-    /** Set the frame spec with a first-byte hint so the frame decoder can dispatch by byte. */
+    /** Set the frame spec with a first-byte hint (ASCII char) so the frame decoder can dispatch by byte. */
     public void frame(char hint, FrameSpec spec) {
         variant.setFrameByteHint((byte) hint);
+        variant.setFrameSpec(spec);
+    }
+
+    /**
+     * Set the frame spec with a raw-byte first-byte hint for binary protocols.
+     * Use {@code 0x78 as byte} in Groovy to pass a literal byte value.
+     *
+     * <p>Example:
+     * <pre>
+     * frame 0x78 as byte, readLengthField(2, 2, 1)
+     * </pre>
+     */
+    public void frame(byte hint, FrameSpec spec) {
+        variant.setFrameByteHint(hint);
         variant.setFrameSpec(spec);
     }
 

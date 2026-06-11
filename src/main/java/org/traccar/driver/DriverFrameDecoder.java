@@ -12,6 +12,13 @@ import java.util.List;
  * incoming buffer against each variant's {@code frameByteHint} to select the
  * correct framing strategy, then extracts one complete frame.
  *
+ * <p>For binary variants (those with {@link FrameSpec.Mode#READ_FIXED} or
+ * {@link FrameSpec.Mode#READ_LENGTH_FIELD}), this handler also sets the
+ * driver/variant channel attributes <em>before</em> firing the frame downstream.
+ * This allows {@link DriverMessageAdapter} to determine whether to wrap the
+ * extracted bytes as a {@link BufReader} (binary) or decode them as a
+ * {@code String} (text).
+ *
  * <p>Falls back to newline framing when no variant hint matches.
  */
 public class DriverFrameDecoder extends ByteToMessageDecoder {
@@ -32,7 +39,15 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
         }
 
         byte first = buf.getByte(buf.readerIndex());
-        FrameSpec spec = resolveSpec(first);
+        SpecMatch match = resolveMatch(first);
+        FrameSpec spec = match != null ? match.spec() : FrameSpec.readLine();
+
+        // Set channel attrs now for binary variants so DriverMessageAdapter can
+        // determine the correct conversion before the next handler runs.
+        if (match != null && match.variant().isBinary()) {
+            ctx.channel().attr(DRIVER_KEY).set(match.driver().getName());
+            ctx.channel().attr(VARIANT_KEY).set(match.variant().getName());
+        }
 
         switch (spec.getMode()) {
             case READ_UNTIL_BYTES -> {
@@ -63,17 +78,38 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                     buf.skipBytes(1);
                 }
             }
+            case READ_FIXED -> {
+                int size = spec.getSize();
+                if (buf.readableBytes() < size) {
+                    return;
+                }
+                out.add(buf.readRetainedSlice(size));
+            }
+            case READ_LENGTH_FIELD -> {
+                int lfo = spec.getLengthFieldOffset();
+                int lfl = spec.getLengthFieldLength();
+                int adj = spec.getLengthAdjustment();
+                if (buf.readableBytes() < lfo + lfl) {
+                    return;
+                }
+                long fieldValue = readLengthFieldValue(buf, lfo, lfl);
+                int totalSize = lfo + lfl + (int) fieldValue + adj;
+                if (totalSize <= 0 || buf.readableBytes() < totalSize) {
+                    return;
+                }
+                out.add(buf.readRetainedSlice(totalSize));
+            }
             default -> buf.skipBytes(buf.readableBytes());
         }
     }
 
     /**
      * Finds the variant whose {@code frameByteHint} matches {@code firstByte}, then
-     * returns its {@link FrameSpec}. Falls back to {@link FrameSpec#readLine()} if
-     * no variant declares a hint for this byte (covers legacy newline-terminated devices).
+     * returns its {@link FrameSpec}. Falls back to the first hintless variant's spec,
+     * or to newline framing if no variants are registered.
      */
-    private FrameSpec resolveSpec(byte firstByte) {
-        FrameSpec fallback = null;
+    private SpecMatch resolveMatch(byte firstByte) {
+        SpecMatch fallback = null;
 
         for (DriverDefinition driver : registry.all()) {
             for (VariantDefinition variant : driver.getVariants()) {
@@ -84,15 +120,25 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                 Byte hint = variant.getFrameByteHint();
                 if (hint == null) {
                     if (fallback == null) {
-                        fallback = spec; // first hintless variant is the fallback
+                        fallback = new SpecMatch(driver, variant, spec);
                     }
                 } else if (hint == firstByte) {
-                    return spec;
+                    return new SpecMatch(driver, variant, spec);
                 }
             }
         }
 
-        return fallback != null ? fallback : FrameSpec.readLine();
+        return fallback;
+    }
+
+    private long readLengthFieldValue(ByteBuf buf, int offset, int length) {
+        int pos = buf.readerIndex() + offset;
+        return switch (length) {
+            case 1 -> buf.getUnsignedByte(pos);
+            case 2 -> buf.getUnsignedShort(pos);
+            case 4 -> buf.getUnsignedInt(pos);
+            default -> throw new IllegalArgumentException("Length field must be 1, 2, or 4 bytes, got " + length);
+        };
     }
 
     private int findSequence(ByteBuf buf, byte[] seq) {
@@ -107,5 +153,9 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
             return i;
         }
         return -1;
+    }
+
+    /** Holds the resolved driver, variant, and frame spec for one incoming byte. */
+    private record SpecMatch(DriverDefinition driver, VariantDefinition variant, FrameSpec spec) {
     }
 }
