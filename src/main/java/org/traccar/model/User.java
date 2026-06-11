@@ -307,6 +307,10 @@ public class User extends ExtendedModel implements UserRestrictions, Disableable
         return Hashing.validatePassword(password, hashedPassword, salt);
     }
 
+    public boolean isPasswordRehashNeeded() {
+        return Hashing.needsRehash(hashedPassword);
+    }
+
     public boolean compare(User other, String... exclusions) {
         if (!EqualsBuilder.reflectionEquals(this, other, "attributes", "hashedPassword", "salt")) {
             return false;

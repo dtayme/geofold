@@ -23,14 +23,19 @@ import java.security.spec.InvalidKeySpecException;
 
 public final class Hashing {
 
-    public static final int ITERATIONS = 1000;
+    private static final String CURRENT_ALGORITHM = "pbkdf2-sha256";
+    public static final int ITERATIONS = 600000;
+    private static final int LEGACY_ITERATIONS = 1000;
     public static final int SALT_SIZE = 24;
-    public static final int HASH_SIZE = 24;
+    public static final int HASH_SIZE = 32;
+    private static final int LEGACY_HASH_SIZE = 24;
 
-    private static final SecretKeyFactory FACTORY;
+    private static final SecretKeyFactory FACTORY_SHA256;
+    private static final SecretKeyFactory FACTORY_SHA1;
     static {
         try {
-            FACTORY = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            FACTORY_SHA256 = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            FACTORY_SHA1 = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         } catch (NoSuchAlgorithmException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -57,10 +62,10 @@ public final class Hashing {
 
     private Hashing() {}
 
-    private static byte[] function(char[] password, byte[] salt) {
+    private static byte[] function(SecretKeyFactory factory, char[] password, byte[] salt, int iterations, int hashSize) {
         try {
-            PBEKeySpec spec = new PBEKeySpec(password, salt, ITERATIONS, HASH_SIZE * Byte.SIZE);
-            return FACTORY.generateSecret(spec).getEncoded();
+            PBEKeySpec spec = new PBEKeySpec(password, salt, iterations, hashSize * Byte.SIZE);
+            return factory.generateSecret(spec).getEncoded();
         } catch (InvalidKeySpecException e) {
             throw new SecurityException(e);
         }
@@ -71,16 +76,37 @@ public final class Hashing {
     public static HashingResult createHash(String password) {
         byte[] salt = new byte[SALT_SIZE];
         RANDOM.nextBytes(salt);
-        byte[] hash = function(password.toCharArray(), salt);
+        byte[] hash = function(FACTORY_SHA256, password.toCharArray(), salt, ITERATIONS, HASH_SIZE);
         return new HashingResult(
-                DataConverter.printHex(hash),
+                CURRENT_ALGORITHM + ":" + ITERATIONS + ":" + DataConverter.printHex(hash),
                 DataConverter.printHex(salt));
     }
 
     public static boolean validatePassword(String password, String hashHex, String saltHex) {
-        byte[] hash = DataConverter.parseHex(hashHex);
+        if (password == null || hashHex == null || saltHex == null) {
+            return false;
+        }
         byte[] salt = DataConverter.parseHex(saltHex);
-        return slowEquals(hash, function(password.toCharArray(), salt));
+        HashComponents components = parseHash(hashHex);
+        return slowEquals(
+                components.hash(),
+                function(components.factory(), password.toCharArray(), salt, components.iterations(), components.hashSize()));
+    }
+
+    public static boolean needsRehash(String hash) {
+        return hash == null || !hash.startsWith(CURRENT_ALGORITHM + ":" + ITERATIONS + ":");
+    }
+
+    private record HashComponents(SecretKeyFactory factory, int iterations, int hashSize, byte[] hash) {}
+
+    private static HashComponents parseHash(String value) {
+        String[] components = value.split(":", 3);
+        if (components.length == 3 && components[0].equals(CURRENT_ALGORITHM)) {
+            int iterations = Integer.parseInt(components[1]);
+            byte[] hash = DataConverter.parseHex(components[2]);
+            return new HashComponents(FACTORY_SHA256, iterations, hash.length, hash);
+        }
+        return new HashComponents(FACTORY_SHA1, LEGACY_ITERATIONS, LEGACY_HASH_SIZE, DataConverter.parseHex(value));
     }
 
     /**

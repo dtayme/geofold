@@ -104,10 +104,22 @@ public class LoginService {
                         new Condition.Equals("LOWER(email)", email),
                         new Condition.Equals("LOWER(login)", email))));
         if (user != null) {
-            if (ldapProvider != null && user.getLogin() != null && ldapProvider.login(user.getLogin(), password)
-                    || !forceLdap && user.isPasswordValid(password)) {
+            boolean localPassword = false;
+            boolean authenticated = ldapProvider != null && user.getLogin() != null
+                    && ldapProvider.login(user.getLogin(), password);
+            if (!authenticated && !forceLdap && user.isPasswordValid(password)) {
+                localPassword = true;
+                authenticated = true;
+            }
+            if (authenticated) {
                 checkUserCode(user, code);
                 checkUserEnabled(user);
+                if (localPassword && user.isPasswordRehashNeeded()) {
+                    user.setPassword(password);
+                    storage.updateObject(user, new Request(
+                            new Columns.Include("hashedPassword", "salt"),
+                            new Condition.Equals("id", user.getId())));
+                }
                 return new LoginResult(user);
             }
         } else {
