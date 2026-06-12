@@ -1,17 +1,15 @@
-# [Traccar](https://www.traccar.org)
+# GEOFOLD
 
 ## Overview
 
-Traccar is an open source GPS tracking system. This repository contains Java-based back-end service. It supports more than 200 GPS protocols and more than 2000 models of GPS tracking devices. Traccar can be used with any major SQL database system. It also provides easy to use [REST API](https://www.traccar.org/traccar-api/).
+GEOFOLD is a fork of the Traccar GPS tracking server. This repository contains
+the Java-based back-end service with fork-specific protocol and driver changes.
+It supports GPS tracking devices, SQL database back ends, and a REST API.
 
-Other parts of Traccar solution include:
+The upstream Traccar project is available at:
 
-- [Traccar web app](https://github.com/traccar/traccar-web)
-- [Traccar Manager app](https://github.com/traccar/traccar-manager)
-
-There is also a set of mobile apps that you can use for tracking mobile devices:
-
-- [Traccar Client app](https://github.com/traccar/traccar-client)
+- [Traccar website](https://www.traccar.org)
+- [Traccar source repository](https://github.com/traccar/traccar)
 
 ## Features
 
@@ -27,25 +25,28 @@ Some of the available features include:
 
 ## Build
 
-Please read [build from source documentation](https://www.traccar.org/build/) on the official website.
+Please read the upstream [build from source documentation](https://www.traccar.org/build/)
+as a starting point. Fork-specific changes may require additional local setup.
 
-## Team
+## Upstream Credits
 
 - Anton Tananaev ([anton@traccar.org](mailto:anton@traccar.org))
 - Andrey Kunitsyn ([andrey@traccar.org](mailto:andrey@traccar.org))
 
-## License
+## Licensing
 
-    Apache License, Version 2.0
+The combined work in this repository is distributed under the GNU Affero General
+Public License v3.0 or later. See [LICENSE](LICENSE).
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+Upstream-original Traccar code remains licensed under the Apache License,
+Version 2.0. The upstream Apache license text is preserved in
+[LICENSE.upstream](LICENSE.upstream), and upstream notices are retained per
+Apache-2.0 section 4.
 
-        http://www.apache.org/licenses/LICENSE-2.0
+Everything at or before the `apache-2.0-final` tag is available solely under
+Apache-2.0. Subsequent fork-original contributions and modifications are
+licensed under AGPL-3.0-or-later.
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+This fork is not affiliated with or endorsed by Traccar Ltd. The Traccar name is
+used only to identify the upstream project and is not used to brand this
+distribution.
