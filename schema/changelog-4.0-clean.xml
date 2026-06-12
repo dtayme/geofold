@@ -1,4 +1,9 @@
 <?xml version="1.1" encoding="UTF-8"?>
+<!--
+Modified by FOGNETX <Drew.Taylor@fognetx.com>, 2026. Modifications licensed under
+AGPL-3.0-or-later (SPDX-License-Identifier: AGPL-3.0-or-later).
+-->
+
 <databaseChangeLog
   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

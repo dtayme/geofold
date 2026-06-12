@@ -1,3 +1,8 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 FOGNETX <Drew.Taylor@fognetx.com>
+-->
+
 # Codebase Functionality Map
 
 This document maps the main functional areas under `src/` and the runtime flows that connect them. It is intended as a starting point for maintainers who need to understand where behavior lives before making changes.

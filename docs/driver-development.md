@@ -1,3 +1,8 @@
+<!--
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 FOGNETX <Drew.Taylor@fognetx.com>
+-->
+
 # Driver Development Guide
 
 Drivers are Groovy scripts that teach the server how to speak a specific GPS tracker
