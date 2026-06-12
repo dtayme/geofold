@@ -4,7 +4,7 @@
 /**
  * Gotop GPS tracker driver.
  *
- * Single-line CSV format (newline-terminated):
+ * Single-line CSV format (#-terminated):
  *   <imei>,<type>,[AV],DATE:yyMMdd,TIME:hhmmss,LAT:dd.dddddd[NS],LO[NT]:ddd.dddddd[EW],Speed:kph[,battery-rssi[,alt,hdop]][,extra]
  *
  * Coordinate format: decimal degrees with hemisphere suffix (N/S/E/W).
@@ -32,9 +32,9 @@ protocol("gotop") {
     variant("main") {
 
         maxFrameLength 512
-        frame readLine()
+        frame readUntil('#')
 
-        matches { msg -> msg =~ /^\d{10,15},/ }
+        matches { msg -> (msg =~ /^\d{10,15},/).find() }
 
         decode { msg, ctx ->
             def m = PATTERN.matcher(msg)

@@ -5,12 +5,16 @@ package org.traccar.driver;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.SocketChannel;
 import org.traccar.NetworkMessage;
 import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -71,6 +75,40 @@ public final class DecodeContext {
      */
     public void lastLocation(Position position) {
         decoder.lastLocation(position);
+    }
+
+    /**
+     * Populates {@code position} with the last known fix using the supplied
+     * device time for timestamp-sensitive fallback logic.
+     */
+    public void lastLocation(Position position, Date deviceTime) {
+        decoder.lastLocation(position, deviceTime);
+    }
+
+    /** Returns the remote network address for the current message, when available. */
+    public SocketAddress remoteAddress() {
+        return remoteAddress;
+    }
+
+    /** Returns the local channel address, when available. */
+    public SocketAddress localAddress() {
+        return channel != null ? channel.localAddress() : null;
+    }
+
+    /** Returns the local listener port, or {@code null} when unavailable. */
+    public Integer localPort() {
+        SocketAddress localAddress = localAddress();
+        return localAddress instanceof InetSocketAddress address ? address.getPort() : null;
+    }
+
+    /** Returns {@code true} when the current channel is UDP/datagram based. */
+    public boolean isUdp() {
+        return channel instanceof DatagramChannel;
+    }
+
+    /** Returns {@code true} when the current channel is TCP/socket based. */
+    public boolean isTcp() {
+        return channel instanceof SocketChannel;
     }
 
     /**

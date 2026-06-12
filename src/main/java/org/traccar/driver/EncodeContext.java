@@ -3,6 +3,7 @@
 
 package org.traccar.driver;
 
+import org.traccar.config.Keys;
 import org.traccar.helper.model.AttributeUtil;
 import org.traccar.model.Command;
 
@@ -71,6 +72,14 @@ public final class EncodeContext {
     public String data() {
         Object v = command.getAttributes().get(Command.KEY_DATA);
         return v != null ? v.toString() : "";
+    }
+
+    /** Returns whether the protocol alternative command format is enabled for this device. */
+    public boolean alternative() {
+        return AttributeUtil.lookup(
+                encoder.getCacheManager(),
+                Keys.PROTOCOL_ALTERNATIVE.withPrefix(encoder.getProtocolName()),
+                command.getDeviceId());
     }
 
     /** Clamps {@code value} to {@code [min, max]}. */

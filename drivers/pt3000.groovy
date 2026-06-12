@@ -16,7 +16,7 @@ import org.traccar.model.Position
 import java.util.regex.Pattern
 
 def PATTERN = Pattern.compile(
-    /^%(\d+),\$GPRMC,(\d{2})(\d{2})(\d{2})\.?\d*,([AV]),(\d{2})(\d{2}\.\d+),([NS]),(\d{3})(\d{2}\.\d+),([EW]),([\d.]+)?,([\d.]+)?,(\d{2})(\d{2})(\d{2})/)
+    '^%(\\d+),\\$GPRMC,(\\d{2})(\\d{2})(\\d{2})\\.?\\d*,([AV]),(\\d{2})(\\d{2}\\.\\d+),([NS]),(\\d{3})(\\d{2}\\.\\d+),([EW]),([\\d.]+)?,([\\d.]+)?,(\\d{2})(\\d{2})(\\d{2})')
 
 protocol("pt3000") {
 

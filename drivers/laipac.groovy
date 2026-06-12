@@ -20,13 +20,14 @@ import org.traccar.model.CellTower
 import org.traccar.model.Network
 import org.traccar.model.Position
 
+import java.util.Locale
 import java.util.regex.Pattern
 
-def EAVSYS = Pattern.compile(
-    /^\$EAVSYS,([^,]+),([0-9]+),(\+?[0-9]+)?,(?:[^,]*),([^,]*)\*([0-9a-fA-F]{2})/)
+def eavsysPattern = Pattern.compile(
+    '^\\$EAVSYS,([^,]+),([0-9]+),(\\+?[0-9]+)?,(?:[^,]*),([^,]*)\\*([0-9a-fA-F]{2})')
 
-def AVRMC = Pattern.compile(
-    /^\$AVRMC,([^,]+),(\d{2})(\d{2})(\d{2}),([AVRPavrp]),(\d{2})(\d{2}\.[\d]+),([NS]),(\d{3})(\d{2}\.[\d]+),([EW]),(\d+\.[\d]+),(\d+\.[\d]+),(\d{2})(\d{2})(\d{2}),([0-9A-Za-z]),([\d.]+),(\d+),(\d),(\d+),(\d+)(?:,([0-9a-fA-F]{1,4})([0-9a-fA-F]{4}),(\d{1,3})(\d{3}))?(?:,[^*]*)?\*([0-9a-fA-F]{2})/)
+def avrmcPattern = Pattern.compile(
+    '^\\$AVRMC,([^,]+),(\\d{2})(\\d{2})(\\d{2}),([AVRPavrp]),(\\d{2})(\\d{2}\\.[\\d]+),([NS]),(\\d{3})(\\d{2}\\.[\\d]+),([EW]),(\\d+\\.[\\d]+),(\\d+\\.[\\d]+),(\\d{2})(\\d{2})(\\d{2}),([0-9A-Za-z]),([\\d.]+),(\\d+),(\\d),(\\d+),(\\d+)(?:,([0-9a-fA-F]{1,4})([0-9a-fA-F]{4}),(\\d{1,3})(\\d{3}))?(?:,[^*]*)?\\*([0-9a-fA-F]{2})')
 
 // NMEA XOR checksum for response messages
 def nmea = { String body ->
@@ -72,6 +73,9 @@ def sendEventResponse = { String event, String password, ctx ->
 protocol("laipac") {
 
     port 5003
+    commands TYPE_CUSTOM,
+             TYPE_POSITION_SINGLE,
+             TYPE_REBOOT_DEVICE
 
     variant("main") {
 
@@ -91,7 +95,7 @@ protocol("laipac") {
 
             // --- EAVSYS device info ---
             if (msg.startsWith('$EAVSYS')) {
-                def m = EAVSYS.matcher(msg)
+                def m = eavsysPattern.matcher(msg)
                 if (!m.find()) return null
                 def session = ctx.session(m.group(1))
                 if (!session) return null
@@ -99,13 +103,13 @@ protocol("laipac") {
                 pos.deviceId = session.deviceId
                 ctx.lastLocation(pos)
                 pos.set(Position.KEY_ICCID,      m.group(2))
-                pos.set(Position.KEY_PHONE,       m.group(3))
+                if (m.group(3)) pos.set(Position.KEY_PHONE, m.group(3))
                 pos.set(Position.KEY_VERSION_FW,  m.group(4))
                 return pos
             }
 
             // --- AVRMC position report ---
-            def m = AVRMC.matcher(msg)
+            def m = avrmcPattern.matcher(msg)
             if (!m.find()) return null
 
             def imei = m.group(1)
@@ -141,12 +145,12 @@ protocol("laipac") {
             // Event codes A-D and O-R represent digital input states
             if (event.length() == 1) {
                 char ec = event.charAt(0)
-                if (ec >= 'A' && ec <= 'D') {
-                    int v = ec - 'A'
+                if (ec >= ('A' as char) && ec <= ('D' as char)) {
+                    int v = ec - ('A' as char)
                     pos.set(Position.PREFIX_IN + '1', (v & 1) != 0)
                     pos.set(Position.PREFIX_IN + '2', (v & 2) != 0)
-                } else if (ec >= 'O' && ec <= 'R') {
-                    int v = ec - 'O'
+                } else if (ec >= ('O' as char) && ec <= ('R' as char)) {
+                    int v = ec - ('O' as char)
                     pos.set(Position.PREFIX_IN + '1', (v & 1) != 0)
                     pos.set(Position.PREFIX_IN + '2', (v & 2) != 0)
                 } else {

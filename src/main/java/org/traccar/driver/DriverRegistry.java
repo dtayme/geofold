@@ -31,8 +31,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -80,6 +82,18 @@ public class DriverRegistry {
         return drivers.get(name);
     }
 
+    public Set<DriverEndpoint> endpoints() {
+        Set<DriverEndpoint> endpoints = new LinkedHashSet<>();
+        for (DriverDefinition driver : drivers.values()) {
+            if (driver.getDefaultPort() > 0) {
+                for (DriverTransport transport : driver.getTransports()) {
+                    endpoints.add(new DriverEndpoint(transport, driver.getDefaultPort()));
+                }
+            }
+        }
+        return endpoints;
+    }
+
     public void reload(String fileName) {
         File file = new File(DRIVERS_DIR, new File(fileName).getName());
         unloadFile(file.getName());
@@ -97,13 +111,27 @@ public class DriverRegistry {
      * Returns null if no driver handles the message.
      */
     public DriverMatch match(String message) {
+        return match(message, null, null);
+    }
+
+    public DriverMatch match(Object message, DriverTransport transport, Integer localPort) {
         for (DriverDefinition driver : drivers.values()) {
+            if (!matchesEndpoint(driver, transport, localPort)) {
+                continue;
+            }
             VariantDefinition variant = driver.matchVariant(message);
             if (variant != null) {
                 return new DriverMatch(driver, variant);
             }
         }
         return null;
+    }
+
+    private boolean matchesEndpoint(DriverDefinition driver, DriverTransport transport, Integer localPort) {
+        if (transport != null && !driver.supportsTransport(transport)) {
+            return false;
+        }
+        return localPort == null || driver.getDefaultPort() == 0 || driver.getDefaultPort() == localPort;
     }
 
     // -------------------------------------------------------------------------

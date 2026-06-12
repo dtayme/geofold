@@ -37,6 +37,12 @@ def PATTERN = Pattern.compile(
 protocol("wondex") {
 
     port 5032
+    commands TYPE_GET_DEVICE_STATUS,
+             TYPE_GET_MODEM_STATUS,
+             TYPE_REBOOT_DEVICE,
+             TYPE_POSITION_SINGLE,
+             TYPE_GET_VERSION,
+             TYPE_IDENTIFICATION
 
     // ------------------------------------------------------------------
     // Binary keep-alive: 8 bytes, first byte 0xD0
@@ -134,6 +140,19 @@ protocol("wondex") {
             }
 
             return pos
+        }
+
+        encode { cmd, ctx ->
+            def password = ctx.devicePassword('0000')
+            switch (cmd.type) {
+                case TYPE_REBOOT_DEVICE:     return "\$WP+REBOOT=${password}"
+                case TYPE_GET_DEVICE_STATUS: return "\$WP+TEST=${password}"
+                case TYPE_GET_MODEM_STATUS:  return "\$WP+GSMINFO=${password}"
+                case TYPE_IDENTIFICATION:    return "\$WP+IMEI=${password}"
+                case TYPE_POSITION_SINGLE:   return "\$WP+GETLOCATION=${password}"
+                case TYPE_GET_VERSION:       return "\$WP+VER=${password}"
+                default:                     return null
+            }
         }
     }
 }

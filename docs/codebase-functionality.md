@@ -92,7 +92,7 @@ Core responsibilities:
 - `DriverScriptResource` exposes admin-only `/api/driver-scripts` endpoints to list, enable, and disable registered script hashes.
 - Approved scripts are cached as `DriverDefinition` instances; modified scripts are unloaded and re-registered under their new hash.
 - `DriverDSL`, `ProtocolBuilder`, `VariantBuilder`, `FrameSpec`, and `AlarmMapBuilder` define the Groovy authoring API.
-- `DriverProtocol` exposes a normal Traccar protocol entry point backed by one TCP and one UDP server.
+- `DriverProtocol` exposes normal Traccar protocol connectors for each enabled driver `(transport, port)` endpoint, including raw TCP, UDP, and HTTP listeners.
 - `DriverFrameDecoder` extracts TCP frames, enforces the configured or per-variant maximum frame length, and uses first-byte hints to select text or binary framing.
 - `DriverMessageAdapter` converts extracted frames to `String` for text variants or `BufReader` for binary variants.
 - `DriverProtocolDecoder` invokes the selected variant's decode closure and returns positions.

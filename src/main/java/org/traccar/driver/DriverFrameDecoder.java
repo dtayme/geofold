@@ -4,18 +4,21 @@
 package org.traccar.driver;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.AttributeKey;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
- * Frame decoder for driver-based protocols. Matches the first byte of the
- * incoming buffer against each variant's {@code frameByteHint} to select the
- * correct framing strategy, then extracts one complete frame.
+ * Frame decoder for driver-based protocols. Preferentially considers drivers
+ * whose declared port matches the channel's local port, then matches the first
+ * byte of the incoming buffer against each variant's {@code frameByteHint} to
+ * select the correct framing strategy and extract one complete frame.
  *
  * <p>For binary variants (those with {@link FrameSpec.Mode#READ_FIXED} or
  * {@link FrameSpec.Mode#READ_LENGTH_FIELD}), this handler also sets the
@@ -33,13 +36,19 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
 
     private final DriverRegistry registry;
     private final int defaultMaxFrameLength;
+    private final Integer scopedPort;
 
     public DriverFrameDecoder(DriverRegistry registry, int defaultMaxFrameLength) {
+        this(registry, defaultMaxFrameLength, null);
+    }
+
+    public DriverFrameDecoder(DriverRegistry registry, int defaultMaxFrameLength, Integer scopedPort) {
         if (defaultMaxFrameLength <= 0) {
             throw new IllegalArgumentException("Default maximum frame length must be positive");
         }
         this.registry = registry;
         this.defaultMaxFrameLength = defaultMaxFrameLength;
+        this.scopedPort = scopedPort;
     }
 
     @Override
@@ -48,8 +57,16 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
             return;
         }
 
+        Integer localPort = localPort(ctx);
         byte first = buf.getByte(buf.readerIndex());
-        SpecMatch match = resolveMatch(first);
+        SpecMatch match = resolveMatch(first, localPort);
+        if (match == null && localPort != null && hasPortScopedDrivers(localPort)) {
+            if (!skipUntilPortHint(buf, localPort)) {
+                return;
+            }
+            first = buf.getByte(buf.readerIndex());
+            match = resolveMatch(first, localPort);
+        }
         FrameSpec spec = match != null ? match.spec() : FrameSpec.readLine();
         int maxFrameLength = maxFrameLength(match);
 
@@ -68,10 +85,12 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                     checkCumulationLength(buf, maxFrameLength);
                     return;
                 }
-                int frameLength = end - buf.readerIndex();
+                int frameLength = end - buf.readerIndex() + (spec.isIncludeTerminator() ? term.length : 0);
                 checkFrameLength(frameLength, maxFrameLength);
                 out.add(buf.readRetainedSlice(frameLength));
-                buf.skipBytes(term.length);
+                if (!spec.isIncludeTerminator()) {
+                    buf.skipBytes(term.length);
+                }
                 while (buf.isReadable()
                         && (buf.getByte(buf.readerIndex()) == '\r'
                          || buf.getByte(buf.readerIndex()) == '\n')) {
@@ -102,6 +121,15 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                 }
                 out.add(buf.readRetainedSlice(size));
             }
+            case READ_FIXED_ANY -> {
+                int size = resolveFixedAnySize(buf.readableBytes(), spec.getSizes());
+                if (size < 0) {
+                    checkCumulationLength(buf, maxFrameLength);
+                    return;
+                }
+                checkFrameLength(size, maxFrameLength);
+                out.add(buf.readRetainedSlice(size));
+            }
             case READ_LENGTH_FIELD -> {
                 int lfo = spec.getLengthFieldOffset();
                 int lfl = spec.getLengthFieldLength();
@@ -110,7 +138,7 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                     checkCumulationLength(buf, maxFrameLength);
                     return;
                 }
-                long fieldValue = readLengthFieldValue(buf, lfo, lfl);
+                long fieldValue = readLengthFieldValue(buf, lfo, lfl, spec.isLengthFieldLittleEndian());
                 long totalSize = (long) lfo + lfl + fieldValue + adj;
                 if (totalSize <= 0) {
                     throw new CorruptedFrameException("Invalid driver frame length: " + totalSize);
@@ -121,19 +149,85 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                 }
                 out.add(buf.readRetainedSlice((int) totalSize));
             }
+            case READ_ESCAPED_DELIMITER -> {
+                int start = buf.readerIndex();
+                if (buf.getByte(start) != spec.getDelimiter()) {
+                    throw new CorruptedFrameException("Escaped driver frame does not start with delimiter");
+                }
+                int end = buf.indexOf(start + 1, buf.writerIndex(), spec.getDelimiter());
+                if (end < 0) {
+                    checkCumulationLength(buf, maxFrameLength);
+                    return;
+                }
+                int rawLength = end - start + 1;
+                checkFrameLength(rawLength, maxFrameLength);
+                byte[] payload = unescapeDelimitedFrame(buf, start + 1, end, spec);
+                buf.skipBytes(rawLength);
+                out.add(Unpooled.wrappedBuffer(payload));
+            }
+            case READ_SCRIPTED -> {
+                Object result = spec.getFrameClosure().call(new FrameBuffer(buf));
+                if (result == null) {
+                    checkCumulationLength(buf, maxFrameLength);
+                    return;
+                }
+                FrameResult frameResult = toFrameResult(result);
+                int length = frameResult.length();
+                checkFrameLength(length, maxFrameLength);
+                if (buf.readableBytes() < length) {
+                    return;
+                }
+                if (frameResult.payload() != null) {
+                    buf.skipBytes(length);
+                    out.add(Unpooled.wrappedBuffer(frameResult.payload()));
+                } else {
+                    out.add(buf.readRetainedSlice(length));
+                }
+            }
             default -> buf.skipBytes(buf.readableBytes());
         }
     }
 
     /**
      * Finds the variant whose {@code frameByteHint} matches {@code firstByte}, then
-     * returns its {@link FrameSpec}. Falls back to the first hintless variant's spec,
-     * or to newline framing if no variants are registered.
+     * returns its {@link FrameSpec}. If the channel port matches any driver, only
+     * those drivers are considered. Otherwise this falls back to the first hintless
+     * variant's spec, or to newline framing if no variants are registered.
      */
-    private SpecMatch resolveMatch(byte firstByte) {
+    protected Integer localPort(ChannelHandlerContext ctx) {
+        if (scopedPort != null) {
+            return scopedPort;
+        }
+        if (ctx.channel().localAddress() instanceof InetSocketAddress address) {
+            return address.getPort();
+        }
+        return null;
+    }
+
+    private SpecMatch resolveMatch(byte firstByte, Integer localPort) {
+        SpecMatch portMatch = resolveMatch(firstByte, localPort, true);
+        if (portMatch != null) {
+            return portMatch;
+        }
+        if (scopedPort != null || (localPort != null && hasPortScopedDrivers(localPort))) {
+            return null;
+        }
+        return resolveMatch(firstByte, localPort, false);
+    }
+
+    private SpecMatch resolveMatch(byte firstByte, Integer localPort, boolean requirePortMatch) {
         SpecMatch fallback = null;
 
         for (DriverDefinition driver : registry.all()) {
+            if (!driver.supportsTransport(DriverTransport.TCP)) {
+                continue;
+            }
+            if (requirePortMatch && (localPort == null || driver.getDefaultPort() != localPort)) {
+                continue;
+            }
+            if (!requirePortMatch && localPort != null && driver.getDefaultPort() == localPort) {
+                continue;
+            }
             for (VariantDefinition variant : driver.getVariants()) {
                 FrameSpec spec = variant.getFrameSpec();
                 if (spec == null) {
@@ -151,6 +245,35 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
         }
 
         return fallback;
+    }
+
+    private boolean hasPortScopedDrivers(int localPort) {
+        for (DriverDefinition driver : registry.all()) {
+            if (driver.supportsTransport(DriverTransport.TCP) && driver.getDefaultPort() == localPort) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean skipUntilPortHint(ByteBuf buf, int localPort) {
+        for (int i = buf.readerIndex() + 1; i < buf.writerIndex(); i++) {
+            byte candidate = buf.getByte(i);
+            for (DriverDefinition driver : registry.all()) {
+                if (!driver.supportsTransport(DriverTransport.TCP) || driver.getDefaultPort() != localPort) {
+                    continue;
+                }
+                for (VariantDefinition variant : driver.getVariants()) {
+                    Byte hint = variant.getFrameByteHint();
+                    if (hint != null && hint == candidate) {
+                        buf.skipBytes(i - buf.readerIndex());
+                        return true;
+                    }
+                }
+            }
+        }
+        buf.skipBytes(buf.readableBytes());
+        return false;
     }
 
     private int maxFrameLength(SpecMatch match) {
@@ -173,14 +296,63 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private long readLengthFieldValue(ByteBuf buf, int offset, int length) {
+    private long readLengthFieldValue(ByteBuf buf, int offset, int length, boolean littleEndian) {
         int pos = buf.readerIndex() + offset;
         return switch (length) {
             case 1 -> buf.getUnsignedByte(pos);
-            case 2 -> buf.getUnsignedShort(pos);
-            case 4 -> buf.getUnsignedInt(pos);
+            case 2 -> littleEndian ? buf.getUnsignedShortLE(pos) : buf.getUnsignedShort(pos);
+            case 4 -> littleEndian ? buf.getUnsignedIntLE(pos) : buf.getUnsignedInt(pos);
             default -> throw new IllegalArgumentException("Length field must be 1, 2, or 4 bytes, got " + length);
         };
+    }
+
+    private byte[] unescapeDelimitedFrame(ByteBuf buf, int start, int end, FrameSpec spec) {
+        ByteBuf payload = Unpooled.buffer(end - start);
+        try {
+            for (int i = start; i < end; i++) {
+                byte value = buf.getByte(i);
+                if (value == spec.getEscape() && i + 1 < end) {
+                    byte escaped = buf.getByte(++i);
+                    Byte replacement = spec.getEscapeMap().get(escaped);
+                    if (replacement != null) {
+                        payload.writeByte(replacement);
+                    } else {
+                        payload.writeByte(value);
+                        payload.writeByte(escaped);
+                    }
+                } else {
+                    payload.writeByte(value);
+                }
+            }
+            byte[] bytes = new byte[payload.readableBytes()];
+            payload.readBytes(bytes);
+            return bytes;
+        } finally {
+            payload.release();
+        }
+    }
+
+    private FrameResult toFrameResult(Object result) {
+        if (result instanceof FrameResult frameResult) {
+            return frameResult;
+        }
+        if (result instanceof Number number) {
+            return FrameResult.raw(number.intValue());
+        }
+        throw new IllegalArgumentException(
+                "Scripted frame closure must return null, a positive length, or FrameResult");
+    }
+
+    private int resolveFixedAnySize(int readableBytes, int[] sizes) {
+        if (sizes == null || sizes.length == 0 || readableBytes < sizes[0]) {
+            return -1;
+        }
+        for (int size : sizes) {
+            if (readableBytes == size) {
+                return size;
+            }
+        }
+        return sizes[0];
     }
 
     private int findSequence(ByteBuf buf, byte[] seq) {

@@ -102,8 +102,8 @@ public final class VariantDefinition {
         return frameSpec != null && frameSpec.isBinary();
     }
 
-    /** Returns true if this variant handles the given raw message string. */
-    public boolean matches(String message) {
+    /** Returns true if this variant handles the given raw message or request. */
+    public boolean matches(Object message) {
         if (matchClosure == null) {
             return false;
         }

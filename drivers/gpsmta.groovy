@@ -20,6 +20,7 @@ def PATTERN = Pattern.compile(
 protocol("gpsmta") {
 
     port 5038
+    transport 'tcp', 'udp'
 
     variant("main") {
 

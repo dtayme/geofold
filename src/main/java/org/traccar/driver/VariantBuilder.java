@@ -21,10 +21,21 @@ public final class VariantBuilder {
         variant.setFrameSpec(spec);
     }
 
+    /** Set a scripted binary frame extractor without a first-byte hint. */
+    public void frame(Closure<?> closure) {
+        variant.setFrameSpec(FrameSpec.readScripted(closure));
+    }
+
     /** Set the frame spec with a first-byte hint (ASCII char) so the frame decoder can dispatch by byte. */
     public void frame(char hint, FrameSpec spec) {
         variant.setFrameByteHint((byte) hint);
         variant.setFrameSpec(spec);
+    }
+
+    /** Set a scripted binary frame extractor with an ASCII first-byte hint. */
+    public void frame(char hint, Closure<?> closure) {
+        variant.setFrameByteHint((byte) hint);
+        variant.setFrameSpec(FrameSpec.readScripted(closure));
     }
 
     /**
@@ -39,6 +50,12 @@ public final class VariantBuilder {
     public void frame(byte hint, FrameSpec spec) {
         variant.setFrameByteHint(hint);
         variant.setFrameSpec(spec);
+    }
+
+    /** Set a scripted binary frame extractor with a raw-byte first-byte hint. */
+    public void frame(byte hint, Closure<?> closure) {
+        variant.setFrameByteHint(hint);
+        variant.setFrameSpec(FrameSpec.readScripted(closure));
     }
 
     /** Override the configured default maximum frame length for this variant. */

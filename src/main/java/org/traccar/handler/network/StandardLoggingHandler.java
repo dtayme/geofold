@@ -23,14 +23,12 @@ import io.netty.channel.ChannelPromise;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.traccar.BaseProtocol;
 import org.traccar.NetworkMessage;
 import org.traccar.config.Config;
 import org.traccar.config.Keys;
 import org.traccar.helper.BufferUtil;
 import org.traccar.helper.NetworkUtil;
 import org.traccar.model.LogRecord;
-import org.traccar.protocol.Jt1078Protocol;
 import org.traccar.session.ConnectionManager;
 
 import java.nio.charset.StandardCharsets;
@@ -49,7 +47,7 @@ public class StandardLoggingHandler extends ChannelDuplexHandler {
     public StandardLoggingHandler(String protocol) {
         this.protocol = protocol;
         this.logLimit = Set.of(
-                BaseProtocol.nameFromClass(Jt1078Protocol.class))
+                "jt1078")
                 .contains(protocol) ? 50 : 0;
     }
 

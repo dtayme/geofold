@@ -21,7 +21,8 @@ traccar/
 The server watches every `.groovy` file in the `drivers/` directory. New and
 changed files are registered in `/api/driver-scripts` with a SHA-256 hash and
 remain disabled by default. Once an administrator enables a registered hash, the
-server loads that script without a restart.
+server loads that script without a restart. If the enabled script introduces a
+new listener port or transport, restart the server so that socket can be opened.
 
 ---
 
@@ -32,7 +33,8 @@ Every driver script calls `protocol()` exactly once at the top level.
 ```groovy
 protocol("mydevice") {
 
-    port 5200           // default port (user may override in traccar.xml)
+    port 5200           // listener port
+    transport 'tcp'     // optional; tcp is the default
 
     variant("main") {
         frame '*' as char, readUntil('#')   // framing
@@ -59,10 +61,47 @@ whose `matches` closure returns `true` handles the message.
 
 ---
 
+## Transports and listeners
+
+Driver scripts declare the listener port and transport at protocol scope. The
+server creates one listener for each unique `(transport, port)` pair used by
+enabled driver scripts at startup.
+
+```groovy
+protocol("rawtcp") {
+    port 5200           // TCP listener on 5200; transport 'tcp' is implicit
+}
+
+protocol("datagram") {
+    port 5201
+    transport 'udp'
+}
+
+protocol("both") {
+    port 5202
+    transport 'tcp', 'udp'
+}
+
+protocol("webhook") {
+    port 5203
+    transport 'http'
+}
+```
+
+Hot reload updates drivers served by already-open listeners. Adding a new port
+or changing a driver's transport requires a server restart so the OS socket can
+be opened or closed.
+
+Raw TCP and HTTP are both stream transports and cannot bind to the same port as
+separate listeners. Use distinct ports for raw TCP and HTTP drivers.
+
+---
+
 ## Framing
 
-Framing tells the server how to extract one complete message from the TCP byte stream.
-UDP is already packetized and ignores the frame declaration.
+Framing tells the server how to extract one complete message from a raw TCP byte
+stream. UDP is already packetized and ignores the frame declaration. HTTP drivers
+use HTTP request routing instead of `frame`.
 
 ### Text framing
 
@@ -74,6 +113,9 @@ frame readUntil('#')
 
 // Read until a multi-byte terminator.
 frame readUntil('##')
+
+// Keep the terminator in the string passed to decode.
+frame readUntilKeep('##')
 
 // Read until newline (\n); strip trailing \r if present.
 frame readLine()
@@ -94,6 +136,11 @@ them before it reads the full frame.
 // Read exactly N bytes per frame (fixed-size protocol).
 frame 0x24 as byte, readFixed(32)
 
+// Read one of several fixed sizes for protocols with same-marker binary variants.
+// If the buffered byte count exactly matches one configured size, that size is used;
+// otherwise the smallest complete size is used to avoid consuming the next frame.
+frame 0x24 as byte, readFixedAny(32, 45)
+
 // Read a length field embedded in the header, then that many more bytes.
 //   readLengthField(offset, fieldWidth)
 //   Total frame = offset + fieldWidth + fieldValue
@@ -104,6 +151,25 @@ frame 0x78 as byte, readLengthField(2, 2)
 //   readLengthField(offset, fieldWidth, adjustment)
 //   Total frame = offset + fieldWidth + fieldValue + adjustment
 frame 0x78 as byte, readLengthField(2, 2, 1)   // 2-byte header, 2-byte length, body, 1-byte checksum
+
+// Little-endian length fields use the same formula.
+frame 0x68 as byte, readLengthFieldLE(1, 2, 1)
+
+// Delimiter-framed binary protocols with byte escaping. The raw frame from
+// delimiter to delimiter is consumed; decode receives the unescaped bytes
+// between delimiters.
+frame 0x7e as byte, readEscaped(0x7e as byte, 0x7d as byte, [
+    (0x02): 0x7e,
+    (0x01): 0x7d,
+])
+
+// Custom binary framing for formats that cannot be represented declaratively.
+// Return null for incomplete data, a positive length to keep raw bytes, or
+// frameResult(rawLength, payloadBytes) to replace the downstream payload.
+frame 0x55 as byte, { fb ->
+    if (fb.readableBytes() < 4) return null
+    return frameRaw(4)
+}
 ```
 
 `fieldWidth` must be 1, 2, or 4 bytes.
@@ -135,9 +201,9 @@ variant("batch") {
 ```
 
 The limit is enforced for newline-delimited frames, arbitrary terminators, fixed
-binary frames, and length-field frames. If a text frame grows past the limit
-before its delimiter arrives, or if a binary frame declares a size above the
-limit, the frame decoder rejects it.
+binary frames, length-field frames, escaped-delimiter frames, and scripted
+frames. If a text frame grows past the limit before its delimiter arrives, or if
+a binary frame declares a size above the limit, the frame decoder rejects it.
 
 ### Byte hints and fallback
 
@@ -157,13 +223,20 @@ variant("text") {
 }
 ```
 
+When a driver script declares `port N`, TCP frame selection first considers
+drivers whose declared port matches the socket's local port. If no script matches
+that local port, selection falls back to all loaded drivers. This lets converted
+protocols reuse common markers such as `*` or `$` without accidentally selecting
+another driver's fallback framing on their own port.
+
 ---
 
 ## `matches` closure
 
-Only used for **text** variants. Receives the fully-extracted message string.
-Return `true` if this variant handles it. Binary variants are already selected
-by their `frameByteHint` and do not need a `matches` closure.
+For raw text variants, receives the fully-extracted message string. For HTTP
+variants, receives a [`DriverHttpRequest`](#http-drivers). Return `true` if this
+variant handles it. Binary variants are already selected by their
+`frameByteHint` and do not need a `matches` closure.
 
 ```groovy
 matches { msg -> msg.startsWith("*HQ,") }
@@ -227,6 +300,11 @@ Must return a `Position` object or `null`.
 | `ctx.session()` | Returns the existing session for the current channel without registering a new device. Use when the device sends follow-up messages (e.g. command responses) that contain no identifier. Returns `null` if no session exists yet. |
 | `ctx.newPosition()` | Creates a new `Position` pre-tagged with the protocol name. |
 | `ctx.lastLocation(pos)` | Fills in the last known GPS fix when the current message has no coordinates. |
+| `ctx.lastLocation(pos, date)` | Same as above, but supplies the device timestamp for timestamp-sensitive fallback logic. |
+| `ctx.remoteAddress()` | Returns the message's remote network address, when available. |
+| `ctx.localAddress()` | Returns the local channel address, when available. |
+| `ctx.localPort()` | Returns the local listener port, or `null` when unavailable. |
+| `ctx.isUdp()` / `ctx.isTcp()` | Returns whether the current channel is UDP/datagram or TCP/socket based. |
 | `ctx.ack(string)` | Sends a raw **text** response back to the device on the current channel. |
 | `ctx.ack(byte[])` | Sends a raw **binary** response back to the device. |
 | `ctx.emit(pos)` | Accumulates a position for **batch-upload** protocols where one frame contains multiple fixes. All emitted positions are returned as a list. Call instead of `return pos` for each record, then `return null` at the end. |
@@ -234,6 +312,70 @@ Must return a `Position` object or `null`.
 | `ctx.alarm(event, model)` | Resolves an event code with a model string for model-aware mappings. |
 | `ctx.model(msg)` | Runs this variant's `model` closure against `msg`. |
 | `ctx.deviceAttrs(session)` | Returns a [`DeviceAttrs`](#per-device-lookups) for the session's device. |
+
+### HTTP drivers
+
+HTTP variants use `transport 'http'` and do not declare `frame`. Their `matches`
+and `decode` closures receive `(DriverHttpRequest req, DriverHttpContext ctx)`.
+
+```groovy
+protocol("webhook") {
+    port 5203
+    transport 'http'
+
+    variant("json") {
+        matches { req -> req.method() == 'POST' && req.path() == '/uplink' }
+
+        decode { req, ctx ->
+            def json = req.jsonObject()
+            def session = ctx.session(json.getString('device_id'))
+            if (!session) {
+                ctx.notFound()
+                return null
+            }
+
+            def pos = ctx.newPosition()
+            pos.deviceId = session.deviceId
+            pos.valid = true
+            pos.latitude = json.getJsonNumber('lat').doubleValue()
+            pos.longitude = json.getJsonNumber('lon').doubleValue()
+
+            ctx.ok()
+            return pos
+        }
+    }
+}
+```
+
+`DriverHttpRequest` API:
+
+| Method | Description |
+|---|---|
+| `req.method()` | HTTP method name, e.g. `GET` or `POST`. |
+| `req.uri()` / `req.path()` | Full URI or decoded path without query string. |
+| `req.header(name)` / `req.contentType()` | Header lookup helpers. |
+| `req.params()` / `req.params(name)` / `req.param(name)` | Query-string parameters. |
+| `req.content()` / `req.content(charset)` | Request body as text. |
+| `req.bytes()` | Request body as `byte[]`. |
+| `req.jsonObject()` / `req.jsonArray()` | Parse request body as JSON. |
+
+`DriverHttpContext` mirrors the session, position, `lastLocation`, `emit`,
+alarm, and `deviceAttrs` helpers from `DecodeContext`, and adds HTTP responses:
+
+| Method | Description |
+|---|---|
+| `ctx.ok()` / `ctx.ok(body)` / `ctx.ok(byte[])` | Send HTTP 200. |
+| `ctx.badRequest()` | Send HTTP 400. |
+| `ctx.notFound()` | Send HTTP 404. |
+| `ctx.status(code)` | Send an empty response with an arbitrary status. |
+| `ctx.text(code, body)` | Send a text response. |
+| `ctx.json(code, body)` | Send an `application/json` response body. |
+| `ctx.binary(code, bytes, contentType)` | Send a binary response. |
+| `ctx.nextQueuedCommand(deviceId)` | Read one queued command so polling devices can receive it in the HTTP response body. |
+
+If a decode closure returns a position but does not explicitly respond, the
+driver runtime sends `200 OK`. If it returns `null` and does not explicitly
+respond, the runtime sends `400 Bad Request`.
 
 ### Setting Position fields
 
@@ -322,6 +464,7 @@ to the device, or `null` if the command type is not supported.
 | `ctx.server()` | `server` attribute from the command (String). |
 | `ctx.port()` | `port` attribute from the command (String). |
 | `ctx.data()` | `data` attribute from the command (String). Used for `TYPE_CUSTOM`. |
+| `ctx.alternative()` | `true` when `protocol.<name>.alternative` is enabled for the current device. |
 | `ctx.clamp(value, min, max)` | Clamps a long value to `[min, max]`. |
 | `ctx.devicePassword(default)` | Device password from the Traccar `password` attribute, walking the device → group → server → config hierarchy. Falls back to `default`. |
 | `ctx.deviceModel()` | Device model string from the Traccar device record (e.g. `"MT700"`), or `null`. |
@@ -334,26 +477,72 @@ All `TYPE_*` constants are available without imports:
 | Constant | Traccar value |
 |---|---|
 | `TYPE_CUSTOM` | `"custom"` — raw command string from `ctx.data()` |
+| `TYPE_IDENTIFICATION` | `"deviceIdentification"` |
 | `TYPE_POSITION_SINGLE` | `"positionSingle"` — request one position report |
 | `TYPE_POSITION_PERIODIC` | `"positionPeriodic"` |
+| `TYPE_POSITION_STOP` | `"positionStop"` |
 | `TYPE_ENGINE_STOP` | `"engineStop"` |
 | `TYPE_ENGINE_RESUME` | `"engineResume"` |
 | `TYPE_ALARM_ARM` | `"alarmArm"` |
 | `TYPE_ALARM_DISARM` | `"alarmDisarm"` |
-| `TYPE_REBOOT_DEVICE` | `"rebootDevice"` |
-| `TYPE_MODE_DEEP_SLEEP` | `"modeDeepSleep"` |
-| `TYPE_SET_CONNECTION` | `"setConnection"` |
-| `TYPE_GET_DEVICE_STATUS` | `"getDeviceStatus"` |
+| `TYPE_ALARM_DISMISS` | `"alarmDismiss"` |
+| `TYPE_SET_TIMEZONE` | `"setTimezone"` |
+| `TYPE_REQUEST_PHOTO` | `"requestPhoto"` |
 | `TYPE_POWER_OFF` | `"powerOff"` |
+| `TYPE_REBOOT_DEVICE` | `"rebootDevice"` |
+| `TYPE_FACTORY_RESET` | `"factoryReset"` |
+| `TYPE_SEND_SMS` | `"sendSms"` |
+| `TYPE_SEND_USSD` | `"sendUssd"` |
+| `TYPE_SOS_NUMBER` | `"sosNumber"` |
+| `TYPE_SILENCE_TIME` | `"silenceTime"` |
+| `TYPE_SET_PHONEBOOK` | `"setPhonebook"` |
+| `TYPE_MESSAGE` | `"message"` |
+| `TYPE_VOICE_MESSAGE` | `"voiceMessage"` |
 | `TYPE_OUTPUT_CONTROL` | `"outputControl"` |
-| `TYPE_IDENTIFICATION` | `"identification"` |
+| `TYPE_VOICE_MONITORING` | `"voiceMonitoring"` |
+| `TYPE_SET_AGPS` | `"setAgps"` |
+| `TYPE_SET_INDICATOR` | `"setIndicator"` |
+| `TYPE_CONFIGURATION` | `"configuration"` |
+| `TYPE_GET_VERSION` | `"getVersion"` |
+| `TYPE_FIRMWARE_UPDATE` | `"firmwareUpdate"` |
+| `TYPE_SET_CONNECTION` | `"setConnection"` |
+| `TYPE_SET_ODOMETER` | `"setOdometer"` |
+| `TYPE_GET_MODEM_STATUS` | `"getModemStatus"` |
+| `TYPE_GET_DEVICE_STATUS` | `"getDeviceStatus"` |
+| `TYPE_SET_SPEED_LIMIT` | `"setSpeedLimit"` |
+| `TYPE_MODE_POWER_SAVING` | `"modePowerSaving"` |
+| `TYPE_MODE_DEEP_SLEEP` | `"modeDeepSleep"` |
+| `TYPE_VIDEO_START` | `"videoStart"` |
+| `TYPE_VIDEO_STOP` | `"videoStop"` |
+| `TYPE_ALARM_GEOFENCE` | `"alarmGeofence"` |
+| `TYPE_ALARM_BATTERY` | `"alarmBattery"` |
+| `TYPE_ALARM_SOS` | `"alarmSos"` |
+| `TYPE_ALARM_REMOVE` | `"alarmRemove"` |
+| `TYPE_ALARM_CLOCK` | `"alarmClock"` |
+| `TYPE_ALARM_SPEED` | `"alarmSpeed"` |
+| `TYPE_ALARM_FALL` | `"alarmFall"` |
+| `TYPE_ALARM_VIBRATION` | `"alarmVibration"` |
+
+Declare the first-class commands a driver implements at protocol scope:
+
+```groovy
+protocol("simpletrack") {
+    port 5099
+    commands TYPE_POSITION_SINGLE, TYPE_POSITION_PERIODIC, TYPE_REBOOT_DEVICE
+    ...
+}
+```
+
+The shared `driver` protocol advertises the union of declared Groovy-driver
+commands plus `TYPE_CUSTOM`.
 
 ---
 
 ## Binary protocols
 
-When a tracker sends raw binary frames (non-ASCII start byte), use `readFixed` or
-`readLengthField` framing. The `decode` closure then receives a `BufReader` instead
+When a tracker sends raw binary frames (non-ASCII start byte), use `readFixed`,
+`readFixedAny`, `readLengthField`, `readLengthFieldLE`, `readEscaped`, or a
+scripted frame closure. The `decode` closure then receives a `BufReader` instead
 of a `String`.
 
 ### BufReader API
@@ -365,9 +554,15 @@ of a `String`.
 | `buf.readUShort()` | `int` | Two bytes, big-endian, unsigned |
 | `buf.readShort()` | `int` | Two bytes, big-endian, signed |
 | `buf.readUShortLE()` | `int` | Two bytes, little-endian, unsigned |
+| `buf.readShortLE()` | `int` | Two bytes, little-endian, signed |
 | `buf.readUInt()` | `long` | Four bytes, big-endian, unsigned |
 | `buf.readInt()` | `int` | Four bytes, big-endian, signed |
+| `buf.readUIntLE()` | `long` | Four bytes, little-endian, unsigned |
 | `buf.readIntLE()` | `int` | Four bytes, little-endian, signed |
+| `buf.readLong()` | `long` | Eight bytes, big-endian, signed |
+| `buf.readLongLE()` | `long` | Eight bytes, little-endian, signed |
+| `buf.readFloat()` | `float` | Four bytes, big-endian IEEE-754 |
+| `buf.readDouble()` | `double` | Eight bytes, big-endian IEEE-754 |
 | `buf.readBcd(digits)` | `String` | BCD-encoded decimal digits (IMEI pattern: `readBcd(15)` → 8 bytes) |
 | `buf.readHex(n)` | `String` | `n` bytes as lowercase hex string (e.g. `"0a1b2c"`) |
 | `buf.readBytes(n)` | `byte[]` | Raw bytes |
@@ -376,9 +571,67 @@ of a `String`.
 | `buf.skip(n)` | — | Advance read position by `n` bytes |
 | `buf.slice(n)` | `BufReader` | New `BufReader` over the next `n` bytes (independent pointer) |
 | `buf.getUByte(index)` | `int` | Peek at `index` bytes ahead, without advancing |
+| `buf.getUShort(index)` / `buf.getUShortLE(index)` | `int` | Peek two bytes without advancing |
+| `buf.getUInt(index)` / `buf.getUIntLE(index)` | `long` | Peek four bytes without advancing |
+| `buf.getBytes(index, n)` | `byte[]` | Peek raw bytes without advancing |
 | `buf.readableBytes()` | `int` | Bytes remaining |
 | `buf.isReadable()` | `boolean` | `true` if any bytes remain |
 | `BufReader.checkBit(v, bit)` | `boolean` | `true` if bit `bit` is set in `v` (bit 0 = LSB) |
+
+### FrameBuffer API
+
+Scripted frame closures receive a `FrameBuffer` named however you choose. It is a
+read-only view over the current TCP bytes; all indexes are relative to the
+current frame candidate and do not advance the stream.
+
+| Method | Returns | Description |
+|---|---|---|
+| `fb.readableBytes()` | `int` | Buffered bytes available |
+| `fb.getUByte(index)` / `fb.getByte(index)` | `int` | Peek one byte |
+| `fb.getUShort(index)` / `fb.getUShortLE(index)` | `int` | Peek two bytes |
+| `fb.getUInt(index)` / `fb.getUIntLE(index)` | `long` | Peek four bytes |
+| `fb.indexOf(value)` / `fb.indexOf(value, from)` | `int` | Relative offset of a byte value, or `-1` |
+| `fb.bytes(offset, n)` | `byte[]` | Copy raw bytes |
+| `fb.ascii(offset, n)` | `String` | Copy bytes as US-ASCII |
+
+Return values:
+
+```groovy
+return null                         // need more bytes
+return frameRaw(12)                 // consume 12 bytes and pass those raw bytes to decode
+return frameResult(rawLen, payload) // consume rawLen bytes and pass payload to decode
+```
+
+### BufWriter and checksums
+
+Use `bytes { ... }` in encode closures or binary acknowledgements to build
+packets without hand-maintaining byte arrays.
+
+```groovy
+byte[] packet = bytes {
+    writeByte 0x78
+    writeShort 0x0005
+    writeBcd imei
+    writeByte xor(toByteArray())
+}
+```
+
+`BufWriter` methods: `writeByte`, `writeShort`, `writeShortLE`, `writeInt`,
+`writeIntLE`, `writeBytes`, `writeHex`, `writeBcd`, `writeZero`,
+`writeString`, `setByte`, `setShort`, `setShortLE`, `setInt`, `setIntLE`,
+`size`, and `toByteArray`.
+
+Checksum helpers available in every driver script:
+
+| Helper | Description |
+|---|---|
+| `xor(byte[])` / `xor(string)` | 8-bit XOR checksum |
+| `sum(byte[])` / `sum(string)` | Modulo-256 additive checksum |
+| `nmea(string)` | NMEA-style `*HH` XOR suffix |
+| `crc16X25(byte[])` | CRC-16/X-25 |
+| `crc16Modbus(byte[])` | CRC-16/MODBUS |
+| `crc16CcittFalse(byte[])` | CRC-16/CCITT-FALSE |
+| `crc32(byte[])` | Standard CRC-32 as unsigned `long` |
 
 ### Binary decode skeleton
 
@@ -807,16 +1060,14 @@ a fleet-wide default at the server level and override per device.
 decode { buf, ctx ->
     // Peek at the full frame to verify checksum before consuming
     byte[] frame = buf.readBytes(buf.readableBytes())
-    int checksum = 0
-    for (int i = 2; i < frame.length - 3; i++) {
-        checksum ^= (frame[i] & 0xFF)
-    }
-    if (checksum != (frame[frame.length - 3] & 0xFF)) return null
+    byte[] covered = frame[2..<(frame.length - 3)] as byte[]
+    if (xor(covered) != (frame[frame.length - 3] & 0xFF)) return null
 
     // Now re-parse from a BufReader wrapping the verified bytes
     // (or re-enter from buf.slice() before consuming)
 }
 ```
 
-For cleaner code, verify by index before consuming: use `buf.getUByte(index)` to
-peek at individual bytes without advancing the read pointer.
+For cleaner code, verify by index before consuming: use `buf.getUByte(index)`,
+`buf.getUShort(index)`, or `buf.getBytes(index, n)` to peek without advancing the
+read pointer.

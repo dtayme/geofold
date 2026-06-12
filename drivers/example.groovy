@@ -78,9 +78,17 @@ def buildCmd = { String body ->
 
 protocol("example") {
 
-    // Default port — the operator can override this in traccar.xml with:
-    //   <entry key='example.port'>5200</entry>
+    // Listener port for this driver. Changing or adding ports requires restart.
     port 5200
+    // Optional. TCP is the default; use 'udp', 'http', or multiple values
+    // such as transport 'tcp', 'udp' for protocols that support both.
+    transport 'tcp'
+
+    commands TYPE_CUSTOM,
+             TYPE_POSITION_SINGLE,
+             TYPE_POSITION_PERIODIC,
+             TYPE_REBOOT_DEVICE,
+             TYPE_SET_CONNECTION
 
     // -----------------------------------------------------------------------
     // Main variant — handles all SimpleTrack messages.
@@ -196,7 +204,8 @@ protocol("example") {
         //
         // cmd — the Command object from Traccar (cmd.type, cmd.attributes)
         // ctx — EncodeContext: deviceId(), utcTime(), freq(), server(), port(),
-        //       data(), clamp(), devicePassword(), deviceModel(), deviceAttrs()
+        //       data(), alternative(), clamp(), devicePassword(), deviceModel(),
+        //       deviceAttrs()
         //
         // Return the string (or byte[]) to send to the device, or null if
         // the command type is not supported.
@@ -278,9 +287,12 @@ protocol("example") {
 //   - Non-ASCII start byte (e.g. 0x78 0x78, 0x24 0x24, 0x7e)
 //   - Length field in the header rather than a text terminator
 //   - Numeric fields (big/little-endian int, BCD, raw bytes)
+//   - Escaped delimiter frames, little-endian lengths, or custom framing
 //
 // The decode closure receives a BufReader instead of a String.
-// See docs/driver-development.md → "Binary protocols" for the full API.
+// Use bytes { ... } and checksum helpers like xor(), crc16X25(), and crc32()
+// when building binary ACKs or commands.
+// See docs/driver-development.md -> "Binary protocols" for the full API.
 // ===========================================================================
 
 /*
@@ -300,6 +312,27 @@ protocol("mybin") {
         // 2 bytes wide; +1 for a checksum byte not counted by the length field.
         //   Total frame = 2 + 2 + bodyLength + 1
         frame 0x78 as byte, readLengthField(2, 2, 1)
+
+        // For same-marker binary formats with several fixed sizes, use:
+        // frame 0x24 as byte, readFixedAny(32, 45)
+
+        // For little-endian length fields, use:
+        // frame 0x68 as byte, readLengthFieldLE(1, 2, 1)
+
+        // For delimiter-framed protocols with escaping (decode receives the
+        // unescaped bytes between delimiters), use:
+        // frame 0x7e as byte, readEscaped(0x7e as byte, 0x7d as byte, [
+        //     (0x02): 0x7e,
+        //     (0x01): 0x7d,
+        // ])
+
+        // For custom frame extraction, return null for incomplete data,
+        // frameRaw(length) to keep raw bytes, or frameResult(length, payload)
+        // to replace the bytes passed into decode:
+        // frame 0x55 as byte, { fb ->
+        //     if (fb.readableBytes() < 4) return null
+        //     return frameRaw(4)
+        // }
 
         // No `matches` closure needed for binary variants — the frameByteHint
         // (0x78) already uniquely identifies them.
@@ -334,12 +367,18 @@ protocol("mybin") {
 
                 // --- Binary ACK ---
                 int seq = buf.readUShort()
-                ctx.ack([0x78, 0x78,
-                         0x00, 0x05,              // body length = 5
-                         (msgType >> 8) & 0xFF, msgType & 0xFF,
-                         (seq >> 8) & 0xFF, seq & 0xFF,
-                         0x00,                    // checksum placeholder
-                         0x0D, 0x0A] as byte[])
+                byte[] ack = bytes {
+                    writeByte 0x78
+                    writeByte 0x78
+                    writeShort 0x0005             // body length = 5
+                    writeShort msgType
+                    writeShort seq
+                    writeByte 0x00                // checksum placeholder
+                    writeByte 0x0D
+                    writeByte 0x0A
+                }
+                ack[ack.length - 3] = xor(ack[2..<(ack.length - 3)] as byte[]) as byte
+                ctx.ack(ack)
 
                 return pos
             }
@@ -349,8 +388,68 @@ protocol("mybin") {
 
         encode { cmd, ctx ->
             def pwd = ctx.devicePassword('000000')
-            // Build and return a byte[] command
+            if (cmd.type == TYPE_REBOOT_DEVICE) {
+                return bytes {
+                    writeByte 0x78
+                    writeByte 0x78
+                    writeShort 0x0002
+                    writeHex '8001'
+                    writeString pwd
+                    writeByte 0x0D
+                    writeByte 0x0A
+                }
+            }
             return null
+        }
+    }
+}
+
+*/
+
+// ===========================================================================
+// HTTP DRIVER SKELETON
+// ===========================================================================
+//
+// Use this pattern when the device or cloud service sends HTTP requests.
+// HTTP drivers use transport 'http' and do not declare frame/readLine/etc.
+// The matches/decode closures receive DriverHttpRequest instead of String.
+// See docs/driver-development.md -> "HTTP drivers" for the full API.
+// ===========================================================================
+
+/*
+
+protocol("myhttp") {
+
+    port 5201
+    transport 'http'
+
+    variant("json") {
+
+        matches { req -> req.method() == 'POST' && req.path() == '/uplink' }
+
+        decode { req, ctx ->
+            def root = req.jsonObject()
+            def session = ctx.session(root.getString('device_id'))
+            if (!session) {
+                ctx.notFound()
+                return null
+            }
+
+            def pos = ctx.newPosition()
+            pos.deviceId = session.deviceId
+            pos.valid = true
+            pos.time = new Date()
+            pos.latitude = root.getJsonNumber('lat').doubleValue()
+            pos.longitude = root.getJsonNumber('lon').doubleValue()
+
+            def queued = ctx.nextQueuedCommand(session.deviceId)
+            if (queued && queued.type == TYPE_CUSTOM) {
+                ctx.ok(queued.getString('data'))
+            } else {
+                ctx.ok()
+            }
+
+            return pos
         }
     }
 }

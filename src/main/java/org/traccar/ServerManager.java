@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.traccar.config.Config;
 import org.traccar.config.Keys;
+import org.traccar.driver.DriverProtocol;
 import org.traccar.helper.ClassScanner;
 
 import jakarta.inject.Inject;
@@ -59,6 +60,13 @@ public class ServerManager implements LifecycleObject {
                     connectorList.addAll(protocol.getConnectorList());
                     protocolList.put(protocol.getName(), protocol);
                 }
+            }
+        }
+        if (enabledProtocols == null || enabledProtocols.contains("driver")) {
+            DriverProtocol protocol = injector.getInstance(DriverProtocol.class);
+            if (!protocol.getConnectorList().isEmpty()) {
+                connectorList.addAll(protocol.getConnectorList());
+                protocolList.put(protocol.getName(), protocol);
             }
         }
     }

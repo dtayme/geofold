@@ -85,6 +85,26 @@ public final class BufReader {
         return buf.readIntLE();
     }
 
+    /** Reads eight bytes, big-endian, as signed. */
+    public long readLong() {
+        return buf.readLong();
+    }
+
+    /** Reads eight bytes, little-endian, as signed. */
+    public long readLongLE() {
+        return buf.readLongLE();
+    }
+
+    /** Reads four bytes, big-endian, as IEEE-754 float. */
+    public float readFloat() {
+        return buf.readFloat();
+    }
+
+    /** Reads eight bytes, big-endian, as IEEE-754 double. */
+    public double readDouble() {
+        return buf.readDouble();
+    }
+
     // -------------------------------------------------------------------------
     // Multi-byte reads
     // -------------------------------------------------------------------------
@@ -184,6 +204,28 @@ public final class BufReader {
      */
     public int getUByte(int index) {
         return buf.getUnsignedByte(buf.readerIndex() + index);
+    }
+
+    public int getUShort(int index) {
+        return buf.getUnsignedShort(buf.readerIndex() + index);
+    }
+
+    public int getUShortLE(int index) {
+        return buf.getUnsignedShortLE(buf.readerIndex() + index);
+    }
+
+    public long getUInt(int index) {
+        return buf.getUnsignedInt(buf.readerIndex() + index);
+    }
+
+    public long getUIntLE(int index) {
+        return buf.getUnsignedIntLE(buf.readerIndex() + index);
+    }
+
+    public byte[] getBytes(int index, int length) {
+        byte[] bytes = new byte[length];
+        buf.getBytes(buf.readerIndex() + index, bytes);
+        return bytes;
     }
 
     // -------------------------------------------------------------------------

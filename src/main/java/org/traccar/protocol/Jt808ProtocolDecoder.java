@@ -19,7 +19,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import org.traccar.BaseProtocol;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.config.Keys;
 import org.traccar.helper.BufferUtil;
@@ -159,7 +158,7 @@ public class Jt808ProtocolDecoder extends BaseProtocolDecoder {
         }
         String webUrl = getConfig().getString(Keys.WEB_URL);
         int uploadPort = getConfig().getInteger(
-                Keys.PROTOCOL_PORT.withPrefix(BaseProtocol.nameFromClass(JimiPhotoProtocol.class)));
+                Keys.PROTOCOL_PORT.withPrefix("jimiphoto"));
         if (webUrl == null || uploadPort <= 0) {
             return;
         }

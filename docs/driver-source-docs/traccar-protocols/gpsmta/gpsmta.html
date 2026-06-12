@@ -1,0 +1,178 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title></title>
+	<meta name="generator" content="LibreOffice 5.0.2.2 (Linux)"/>
+	<meta name="created" content="2015-10-24T10:43:04.028314967"/>
+	<meta name="changed" content="2015-10-24T10:44:46.576850985"/>
+	<style type="text/css">
+		@page { margin: 2cm }
+		p { margin-bottom: 0.25cm; line-height: 120% }
+		h2.western { font-family: "Liberation Sans", sans-serif; font-size: 16pt }
+		h2.cjk { font-family: "Droid Sans Fallback"; font-size: 16pt }
+		h2.ctl { font-family: "FreeSans"; font-size: 16pt }
+		td p { margin-bottom: 0cm }
+		a:link { so-language: zxx }
+	</style>
+</head>
+<body lang="en-NZ" dir="ltr">
+<h2 class="western" style="font-variant: normal; letter-spacing: normal; font-style: normal">
+<font color="#0000ff"><font face="Verdana"><font size="4" style="font-size: 14pt">16.
+Работа трекера с любым, отличным от
+GPSM, сервером мониторинга</font></font></font></h2>
+<p align="justify" style="margin-bottom: 0.13cm; widows: 1"><span style="font-variant: normal"><font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><span style="letter-spacing: normal"><span style="font-style: normal"><b>Трекер</b></span></span></font></font></font></span><span style="font-variant: normal"><font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><span style="letter-spacing: normal"><span style="font-style: normal"><span style="font-weight: normal">&nbsp;поддерживает
+возможность передачи маршрутных точек
+на другой, отличный от&nbsp;</span></span></span></font></font></font></span><a href="http://doro.poltava.ua/gpsm/index.html"><span style="font-variant: normal"><font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><span style="letter-spacing: normal"><span style="font-style: normal"><b>GPSM</b></span></span></font></font></font></span></a><span style="font-variant: normal"><font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><span style="letter-spacing: normal"><span style="font-style: normal"><span style="font-weight: normal">,
+комплекс GPS мониторинга.</span></span></span></font></font></font></span></p>
+<p align="justify" style="margin-bottom: 0.13cm; font-variant: normal; letter-spacing: normal; font-style: normal; font-weight: normal; widows: 1">
+<font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Для</b>&nbsp;этого
+вам необходимо в настройках программы
+gpsmta указать сервер и порт. Данные будут
+передаваться на указанный сервер по
+UDP протоколу. Сервер&nbsp;<font color="#ff0000"><b>должен
+поддерживать</b></font>&nbsp;протокол общения
+gpsmta трекера.</font></font></font></p>
+<p align="justify" style="margin-bottom: 0.13cm; font-variant: normal; letter-spacing: normal; font-style: normal; font-weight: normal; widows: 1">
+<font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Протокол</b>&nbsp;общения
+gpsmta трекера с внешним сервером:</font></font></font></p>
+<center>
+	<table cellpadding="5" cellspacing="0">
+		<tr bgcolor="#e0e0e0">
+			<td colspan="12" bgcolor="#c8f8c8" style="border: none; padding: 0cm">
+				<p align="left"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Запрос</b>&nbsp;(посылка
+				от трекера на сервер)</font></font></p>
+			</td>
+		</tr>
+		<tr bgcolor="#e0e0e0">
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>UID</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Количество
+				секунд от начала Эпохи<br/>
+(unix time)</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Широта<br/>
+(в
+				градусах и долях градуса)</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Долгота
+				(в градусах и долях градуса)</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Скорость</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Азимут</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Точность</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Высота</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Набор
+				флагов</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Заряд
+				батареи (%)</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Температура
+				батареи (Градус)</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Статус
+				батареи</b></font></font></p>
+			</td>
+		</tr>
+		<tr bgcolor="#f0f0f8">
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>123456789</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>1401610649</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>45.32175</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>32.14598</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>25</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>139</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>25</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>115</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>00</b><br/>
+<u>первый
+				ноль</u>&nbsp;- GPS точка (единица - GSM)<br/>
+<u>второй
+				ноль</u>&nbsp;- точка из кеша (единица -
+				сквозная, не из кеша)</font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>75</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>25</b></font></font></p>
+			</td>
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>1</b>&nbsp;-
+				заряжается<br/>
+<b>0</b>&nbsp;- не заряжается</font></font></p>
+			</td>
+		</tr>
+	</table>
+</center>
+<center>
+	<table cellpadding="5" cellspacing="0">
+		<tr bgcolor="#e0e0e0">
+			<td bgcolor="#c0c0ff" style="border: none; padding: 0cm">
+				<p align="left"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Ответ</b>&nbsp;(посылка
+				от сервера на трекер)</font></font></p>
+			</td>
+		</tr>
+		<tr bgcolor="#e0e0e0">
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Количество
+				секунд от начала Эпохи<br/>
+(unix time)</b></font></font></p>
+			</td>
+		</tr>
+		<tr bgcolor="#f0f0f8">
+			<td style="border: none; padding: 0cm">
+				<p align="center"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>1401610649</b><br/>
+(Тоже
+				значение что и в пакете запроса)</font></font></p>
+			</td>
+		</tr>
+	</table>
+</center>
+<p align="justify" style="margin-bottom: 0.13cm; font-variant: normal; letter-spacing: normal; font-style: normal; font-weight: normal; widows: 1">
+<font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Данные</b>&nbsp;отсылаются
+в текстовом формате. Разделитель полей
+- пробел.</font></font></font></p>
+<p align="justify" style="margin-bottom: 0.13cm; font-variant: normal; letter-spacing: normal; font-style: normal; font-weight: normal; widows: 1">
+<font color="#000000"><font face="Verdana"><font size="2" style="font-size: 9pt"><b>Если</b>&nbsp;сервер
+не ответит, точка будет помещена в кеш
+программы&nbsp;<b>gpsmta</b>. Повторная передача
+точки произойдет через 60 сек.</font></font></font></p>
+<p style="margin-bottom: 0cm; line-height: 100%"><br/>
+
+</p>
+</body>
+</html>

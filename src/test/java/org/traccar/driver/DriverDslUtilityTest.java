@@ -1,0 +1,104 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 FOGNETX <Drew.Taylor@fognetx.com>
+
+package org.traccar.driver;
+
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpVersion;
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class DriverDslUtilityTest {
+
+    @Test
+    public void writesBinaryPackets() {
+        byte[] packet = new BufWriter()
+                .writeByte(0x78)
+                .writeShort(0x1234)
+                .writeShortLE(0x5678)
+                .writeBcd("12345")
+                .toByteArray();
+
+        assertArrayEquals(new byte[] {
+                0x78, 0x12, 0x34, 0x78, 0x56, 0x12, 0x34, 0x5f}, packet);
+    }
+
+    @Test
+    public void exposesChecksumHelpers() {
+        assertEquals(0x40, DriverDSL.xor("ABC"));
+        assertEquals(198, DriverDSL.sum("ABC"));
+        assertEquals("*40", DriverDSL.nmea("ABC"));
+    }
+
+    @Test
+    public void defaultsDriversToTcpTransport() throws Exception {
+        DriverDefinition definition = parse("""
+                protocol('defaultTransport') {
+                    port 5555
+                    variant('main') {
+                        frame readLine()
+                        matches { msg -> true }
+                        decode { msg, ctx -> null }
+                    }
+                }
+                """);
+
+        assertEquals(5555, definition.getDefaultPort());
+        assertEquals(1, definition.getTransports().size());
+        assertTrue(definition.supportsTransport(DriverTransport.TCP));
+    }
+
+    @Test
+    public void parsesExplicitTransportDeclarations() throws Exception {
+        DriverDefinition definition = parse("""
+                protocol('httpTransport') {
+                    port 8088
+                    transport 'http'
+                    variant('main') {
+                        matches { req -> req.path() == '/uplink' }
+                        decode { req, ctx -> null }
+                    }
+                }
+                """);
+
+        assertEquals(8088, definition.getDefaultPort());
+        assertEquals(1, definition.getTransports().size());
+        assertTrue(definition.supportsTransport(DriverTransport.HTTP));
+    }
+
+    @Test
+    public void wrapsHttpRequests() {
+        var request = new DefaultFullHttpRequest(
+                HttpVersion.HTTP_1_1,
+                HttpMethod.POST,
+                "/uplink?id=123",
+                Unpooled.copiedBuffer("{\"ok\":true}", StandardCharsets.UTF_8));
+
+        DriverHttpRequest wrapped = new DriverHttpRequest(request);
+
+        assertEquals("POST", wrapped.method());
+        assertEquals("/uplink", wrapped.path());
+        assertEquals("123", wrapped.param("id"));
+        assertTrue(wrapped.jsonObject().getBoolean("ok"));
+    }
+
+    private DriverDefinition parse(String source) throws Exception {
+        CompilerConfiguration compilerConfig = new CompilerConfiguration();
+        compilerConfig.setScriptBaseClass(DriverDSL.class.getName());
+        GroovyShell shell = new GroovyShell(
+                Thread.currentThread().getContextClassLoader(), new Binding(), compilerConfig);
+        DriverDSL script = (DriverDSL) shell.parse(source);
+        script.run();
+        return script.getDefinition();
+    }
+}

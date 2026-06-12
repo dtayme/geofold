@@ -19,7 +19,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import org.traccar.BasePipelineFactory;
-import org.traccar.BaseProtocol;
 import org.traccar.BaseProtocolEncoder;
 import org.traccar.Protocol;
 import org.traccar.config.Keys;
@@ -131,7 +130,7 @@ public class Jt808ProtocolEncoder extends BaseProtocolEncoder {
                     var config = getCacheManager().getConfig();
                     String host = URI.create(config.getString(Keys.WEB_URL)).getHost();
                     int port = config.getInteger(
-                            Keys.PROTOCOL_PORT.withPrefix(BaseProtocol.nameFromClass(Jt1078Protocol.class)));
+                            Keys.PROTOCOL_PORT.withPrefix("jt1078"));
                     int videoChannel = command.getInteger(Command.KEY_INDEX, 1);
                     data.writeByte(host.length());
                     data.writeCharSequence(host, StandardCharsets.US_ASCII);

@@ -5,6 +5,9 @@ package org.traccar.driver;
 
 import groovy.lang.Closure;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * Delegate for the {@code protocol(name) { }} block.
  */
@@ -18,6 +21,33 @@ public final class ProtocolBuilder {
 
     public void port(int port) {
         definition.setDefaultPort(port);
+    }
+
+    public void transport(String... transports) {
+        if (transports == null || transports.length == 0) {
+            throw new IllegalArgumentException("At least one driver transport is required");
+        }
+        Set<DriverTransport> values = EnumSet.noneOf(DriverTransport.class);
+        for (String transport : transports) {
+            values.add(DriverTransport.from(transport));
+        }
+        definition.setTransports(values);
+    }
+
+    public void tcp() {
+        definition.setTransports(EnumSet.of(DriverTransport.TCP));
+    }
+
+    public void udp() {
+        definition.setTransports(EnumSet.of(DriverTransport.UDP));
+    }
+
+    public void http() {
+        definition.setTransports(EnumSet.of(DriverTransport.HTTP));
+    }
+
+    public void commands(String... commandTypes) {
+        definition.addSupportedCommands(commandTypes);
     }
 
     public void variant(String name, Closure<?> body) {

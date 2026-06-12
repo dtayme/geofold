@@ -29,10 +29,10 @@ def HQ_HEARTBEAT = Pattern.compile(
     /^\*HQ,([^,]+),V4,[^,]*,(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/)
 
 def MT_POSITION = Pattern.compile(
-    /^#(?:(\d{2,4})|[\da-fA-F]*)(?:#(?:(\d+),(\d+),([0-9a-fA-F]+),([0-9a-fA-F]+))?)?\$GPRMC,(?:(\d{2})(\d{2})(\d{2})\.\d+)?,([AVL]),(?:(\d+)(\d{2}\.\d+),([NS]),(\d+)(\d{2}\.\d+),([EW]),([\d.]*),([\d.]*),(\d{2})(\d{2})(\d{2}))?/)
+    '^#(?:(\\d{2,4})|[\\da-fA-F]*)(?:#(?:(\\d+),(\\d+),([0-9a-fA-F]+),([0-9a-fA-F]+))?)?\\$GPRMC,(?:(\\d{2})(\\d{2})(\\d{2})\\.\\d+)?,([AVL]),(?:(\\d+)(\\d{2}\\.\\d+),([NS]),(\\d+)(\\d{2}\\.\\d+),([EW]),([\\d.]*),([\\d.]*),(\\d{2})(\\d{2})(\\d{2}))?')
 
 def MT_WIFI = Pattern.compile(
-    /^#(?:(\d{2,4})|[\da-fA-F]+)#?(?:(\d+),(\d+),([0-9a-fA-F]+),([0-9a-fA-F]+))?\$WIFI,(\d{2})(\d{2})(\d{2})\.\d+,[AVL],(.*),(\d{2})(\d{2})(\d{2})\*[\da-fA-F]{2}$/)
+    '^#(?:(\\d{2,4})|[\\da-fA-F]+)#?(?:(\\d+),(\\d+),([0-9a-fA-F]+),([0-9a-fA-F]+))?\\$WIFI,(\\d{2})(\\d{2})(\\d{2})\\.\\d+,[AVL],(.*),(\\d{2})(\\d{2})(\\d{2})\\*[\\da-fA-F]{2}$')
 
 // ---------------------------------------------------------------------------
 // Helpers shared between variants
@@ -74,6 +74,17 @@ def utcNow = { new Date().format('HHmmss', TimeZone.getTimeZone('UTC')) }
 // ---------------------------------------------------------------------------
 
 protocol("mictrack") {
+
+    commands TYPE_CUSTOM,
+             TYPE_REBOOT_DEVICE,
+             TYPE_POSITION_PERIODIC,
+             TYPE_MODE_DEEP_SLEEP,
+             TYPE_SET_CONNECTION,
+             TYPE_GET_DEVICE_STATUS,
+             TYPE_ENGINE_STOP,
+             TYPE_ENGINE_RESUME,
+             TYPE_ALARM_ARM,
+             TYPE_ALARM_DISARM
 
     // -----------------------------------------------------------------------
     // HQ variant — MT532 and compatible (*HQ,...# framing)
@@ -165,17 +176,17 @@ protocol("mictrack") {
         model   { msg -> msg.split("#")[2] }   // "MT700", "MT600", etc.
 
         alarms {
-            "TOWED"      >> ALARM_TOW
-            "SHAKE"      >> ALARM_VIBRATION
-            "BLP"        >> ALARM_LOW_BATTERY
-            "CLP"        >> ALARM_LOW_BATTERY
-            "SOS"        >> ALARM_SOS
-            "OVERSPEED"  >> ALARM_OVERSPEED
-            "OS"         >> ALARM_GEOFENCE_EXIT
-            "RS"         >> ALARM_GEOFENCE_ENTER
+            rightShift("TOWED",     ALARM_TOW)
+            rightShift("SHAKE",     ALARM_VIBRATION)
+            rightShift("BLP",       ALARM_LOW_BATTERY)
+            rightShift("CLP",       ALARM_LOW_BATTERY)
+            rightShift("SOS",       ALARM_SOS)
+            rightShift("OVERSPEED", ALARM_OVERSPEED)
+            rightShift("OS",        ALARM_GEOFENCE_EXIT)
+            rightShift("RS",        ALARM_GEOFENCE_ENTER)
             // DEF and HT differ between MT700 and MT600
-            "DEF" >> { m -> m?.startsWith("MT700") ? ALARM_REMOVING  : ALARM_POWER_CUT  }
-            "HT"  >> { m -> m?.startsWith("MT700") ? null            : ALARM_TEMPERATURE }
+            rightShift("DEF", { m -> m?.startsWith("MT700") ? ALARM_REMOVING  : ALARM_POWER_CUT  })
+            rightShift("HT",  { m -> m?.startsWith("MT700") ? null            : ALARM_TEMPERATURE })
         }
 
         decode { msg, ctx ->

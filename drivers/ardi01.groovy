@@ -29,7 +29,7 @@ protocol("ardi01") {
         maxFrameLength 256
         frame readLine()
 
-        matches { msg -> msg =~ /^\d{10,15},\d{14},/ }
+        matches { msg -> (msg =~ /^\d{10,15},\d{14},/).find() }
 
         decode { msg, ctx ->
             def m = PATTERN.matcher(msg)

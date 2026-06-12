@@ -4,6 +4,7 @@
 package org.traccar.driver;
 
 import io.netty.channel.Channel;
+import io.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.traccar.BaseProtocolDecoder;
@@ -12,7 +13,9 @@ import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
 import org.traccar.session.cache.CacheManager;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -51,7 +54,7 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private Object decodeText(Channel channel, SocketAddress remoteAddress, String message) {
-        DriverRegistry.DriverMatch match = registry.match(message);
+        DriverRegistry.DriverMatch match = registry.match(message, transport(channel), localPort(channel));
         if (match == null) {
             LOGGER.debug("No driver matched message: {}", message.length() > 80
                     ? message.substring(0, 80) + "…" : message);
@@ -135,11 +138,26 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
         getLastLocation(position, null);
     }
 
+    void lastLocation(Position position, Date deviceTime) {
+        getLastLocation(position, deviceTime);
+    }
+
     String protocolName() {
         return getProtocolName();
     }
 
     CacheManager cacheManager() {
         return getCacheManager();
+    }
+
+    private DriverTransport transport(Channel channel) {
+        return channel instanceof DatagramChannel ? DriverTransport.UDP : DriverTransport.TCP;
+    }
+
+    private Integer localPort(Channel channel) {
+        if (channel != null && channel.localAddress() instanceof InetSocketAddress address) {
+            return address.getPort();
+        }
+        return null;
     }
 }

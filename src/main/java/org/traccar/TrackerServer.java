@@ -56,9 +56,13 @@ public abstract class TrackerServer implements TrackerConnector {
     }
 
     public TrackerServer(Config config, String protocol, boolean datagram) {
+        this(config, protocol, datagram, config.getInteger(Keys.PROTOCOL_PORT.withPrefix(protocol)));
+    }
+
+    public TrackerServer(Config config, String protocol, boolean datagram, int port) {
         secure = config.getBoolean(Keys.PROTOCOL_SSL.withPrefix(protocol));
         address = config.getString(Keys.PROTOCOL_ADDRESS.withPrefix(protocol));
-        port = config.getInteger(Keys.PROTOCOL_PORT.withPrefix(protocol));
+        this.port = port;
 
         BasePipelineFactory pipelineFactory = new BasePipelineFactory(this, config, protocol) {
             @Override
