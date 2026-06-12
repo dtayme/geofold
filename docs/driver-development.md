@@ -219,6 +219,7 @@ Must return a `Position` object or `null`.
 | Method | Description |
 |---|---|
 | `ctx.session(uniqueId)` | Gets/creates a device session for the given IMEI. Returns `null` if the device is unknown — always guard against this. |
+| `ctx.session()` | Returns the existing session for the current channel without registering a new device. Use when the device sends follow-up messages (e.g. command responses) that contain no identifier. Returns `null` if no session exists yet. |
 | `ctx.newPosition()` | Creates a new `Position` pre-tagged with the protocol name. |
 | `ctx.lastLocation(pos)` | Fills in the last known GPS fix when the current message has no coordinates. |
 | `ctx.ack(string)` | Sends a raw **text** response back to the device on the current channel. |
