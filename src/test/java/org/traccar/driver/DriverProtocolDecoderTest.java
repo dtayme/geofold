@@ -6,17 +6,23 @@ package org.traccar.driver;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.junit.jupiter.api.Test;
+import org.traccar.NetworkMessage;
 import org.traccar.Protocol;
 import org.traccar.ProtocolTest;
+import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
 
 import java.io.File;
 import java.net.SocketAddress;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -138,6 +144,70 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
     }
 
     @Test
+    public void testGl100DecodeAndHeartbeatAck() throws Exception {
+        var decoder = decoder("gl100");
+
+        verifyPosition(decoder, text(
+                "+RESP:GTFRI,123456789012345,1,0,0,0,12.5,180,45.5,0.8,114.1234,22.5678,"
+                        + "20260612010203,"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        EmbeddedChannel channel = new EmbeddedChannel();
+        assertNull(decoder.decode(channel, null, text(
+                "AT+GTHBD=TAG,123456789012345,20260612010203,0001")));
+        assertTextAck(channel, "+RESP:GTHBD,GPRS ACTIVE,TAG,123456789012345,20260612010203\0");
+    }
+
+    @Test
+    public void testGotopDecode() throws Exception {
+        var decoder = decoder("gotop");
+
+        verifyPosition(decoder, text(
+                "123456789012345,TRACK,A,DATE:260612,TIME:010203,LAT:22.567800N,LON:114.123400E,"
+                        + "Speed:36,85-5,12.5,1.2"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+    }
+
+    @Test
+    public void testH02TextDecodeBatchAndHeartbeatAck() throws Exception {
+        var decoder = decoder("h02");
+
+        verifyPosition(decoder, text(
+                "*HQ,123456789012345,V1,010203,A,2234.0680,N,11407.4040,E,10,180,120626,FFFFFFFF"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        verifyPositions(decoder, text(
+                "*HQ,123456789012345,BC,0,0,A,2234.0680,N,11407.4040,E,10,180,12010203,FFFFFFFF;"
+                        + "A,2234.0000,N,11407.0000,E,0,0,12010204,FFFFFFFF"));
+
+        EmbeddedChannel channel = new EmbeddedChannel();
+        Object result = decoder.decode(channel, null, text("*HQ,123456789012345,V0,80"));
+        assertInstanceOf(Position.class, result);
+        assertTextAck(channel, "*HQ,123456789012345,V0#");
+    }
+
+    @Test
+    public void testH02BinaryDecode() throws Exception {
+        var decoder = decoder("h02");
+
+        verifyPosition(decoder, binary(
+                "2412345678900102031206262234068005114074040e000180ffffffff000000"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+    }
+
+    @Test
+    public void testWondexKeepaliveEcho() throws Exception {
+        var decoder = decoder("wondex");
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.attr(DriverFrameDecoder.DRIVER_KEY).set("wondex");
+        channel.attr(DriverFrameDecoder.VARIANT_KEY).set("keepalive");
+
+        ByteBuf frame = binary("d001020304050607");
+        assertNull(decoder.decode(channel, null, new BufReader(frame)));
+        assertBinaryAck(channel, "d001020304050607");
+    }
+
+    @Test
     public void testLaipacDecode() throws Exception {
         var decoder = decoder("laipac");
 
@@ -247,6 +317,18 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
 
         verifyPosition(decoder, text(
                 "$AVRMC,358174067149865,143747,P,5050.1124,N,00420.0542,E,1.34,161.96,190318,A,3416,119,1,0,0,0,0,0,0*5F"));
+    }
+
+    private void assertTextAck(EmbeddedChannel channel, String expected) {
+        NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
+        assertEquals(expected, response.getMessage());
+    }
+
+    private void assertBinaryAck(EmbeddedChannel channel, String expectedHex) {
+        NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
+        ByteBuf responseBuffer = assertInstanceOf(ByteBuf.class, response.getMessage());
+        assertEquals(expectedHex, ByteBufUtil.hexDump(responseBuffer));
+        responseBuffer.release();
     }
 
     private static class TestDriverProtocolDecoder extends DriverProtocolDecoder {

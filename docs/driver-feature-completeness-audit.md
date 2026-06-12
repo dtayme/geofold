@@ -72,8 +72,8 @@ and should be fixed or explicitly justified from documentation:
 
 | Driver | Current Groovy framing | Archived/documented indication | Required work |
 | --- | --- | --- | --- |
-| `gl100` | Fixed: `+RESP...` and `AT+GTHBD...` are now null-terminated variants with first-byte hints. | Queclink GL100/GL200-family traffic is null-terminated in the archived decoder, and the heartbeat response already includes `\0`. | Add real fixture coverage as exact source-doc examples are extracted. |
-| `gotop` | Fixed: now uses `readUntil('#')`. | Archived Java uses `#` as the frame delimiter. | Add real fixture coverage from the downloaded document. |
+| `gl100` | Fixed: `+RESP...` and `AT+GTHBD...` are now null-terminated variants with first-byte hints. | Queclink GL100/GL200-family traffic is null-terminated in the archived decoder, and the heartbeat response already includes `\0`. | Fixture coverage added for position decode and heartbeat ACK. |
+| `gotop` | Fixed: now uses `readUntil('#')`. | Archived Java uses `#` as the frame delimiter. | Fixture coverage added for `#`-terminated position decode. |
 | `pt3000` | Verified unchanged: `readUntil("d")`. | The readable remote Traccar PDF rendering shows the parsed `%<imei>,$GPRMC,...` response ending with message code `N028d`. | No driver change needed; retained archived Java/Groovy framing and added remote extraction notes. |
 
 ### P1: Alias Documentation Needs Confirmation
@@ -88,18 +88,21 @@ rather than an exact driver-name match:
 | `mictrack` | `external/mictrack/` | Vendor documents are present; command declarations still need migration. |
 | `topflyftech` | `traccar-protocols/topflytech/`, `traccar-protocols/t800x/` | Archived decoder parity looks consistent; command support should be revisited if the family docs include outbound commands. |
 
-### P1: Test Coverage Gaps
+### Resolved: Test Coverage Gaps
 
-The migrated driver decoder tests currently cover a small representative set.
-Feature-completeness work should add fixture tests as protocol behavior is
-verified, especially for:
+The migrated driver tests now cover the previously identified high-priority
+feature-completeness checks:
 
-- `gl100` null-terminated heartbeat and position frames.
-- `gotop` `#`-terminated position frames.
+- `gl100` null-terminated position decode and heartbeat ACK.
+- `gotop` `#`-terminated position decode.
 - `svias` command encoding.
-- `wondex` command encoding and keepalive echo.
+- `wondex` command encoding and binary keepalive echo.
 - `mictrack`, `laipac`, and `pretrace` command declaration visibility.
-- H02 binary, batch, ACK, and command variants from the expanded driver.
+- H02 text position, blind-spot batch, heartbeat ACK, binary standard frame,
+  and command declaration coverage.
+
+Additional fixture work should use examples extracted from exact vendor/source
+documents as those documents become machine-readable.
 
 ## Documented Driver Coverage
 
@@ -109,13 +112,13 @@ verified, especially for:
 | `box` | Exact Traccar archive match | Decode and CR framing appear aligned with archived Java. |
 | `cartrack` | Exact Traccar archive match | Migrated from Java; decode covers documented position, login, ping/error notices, IO, odometer, alarm status, stored/realtime marker, optional ADC, and documented outbound commands. |
 | `carscop` | Exact Traccar archive match | Decode behavior appears aligned with archived Java for the covered message family. |
-| `gl100` | Alias: Queclink GL100/GL200-family docs | Framing gap: Groovy uses line framing while archived Queclink handling is null-terminated. |
-| `gotop` | Exact Traccar archive match | Framing gap: Groovy uses line framing while archived Java uses `#`. |
+| `gl100` | Alias: Queclink GL100/GL200-family docs | Null-terminated position and heartbeat framing are implemented and covered by fixtures; exact GL100 source examples still need extraction. |
+| `gotop` | Exact Traccar archive match | `#`-terminated framing is implemented and covered by fixture. |
 | `gpsmarker` | Exact Traccar archive match | Decode and CR framing appear aligned with archived Java. |
 | `gpsmta` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `gt02` | Exact Traccar archive match | Decode, login, heartbeat ACK, and length-field framing appear aligned with archived Java. |
 | `gt30` | Tentative alias: Meiligao GT30i/GT60/VT family | Decode parity appears good; exact documentation match remains unconfirmed. |
-| `h02` | Exact Traccar archive match | Coverage has been expanded for text, binary, ACK, batch, and commands; keep adding fixtures for each documented variant. |
+| `h02` | Exact Traccar archive match | Coverage has been expanded for text, binary standard, ACK, batch, and commands; keep adding fixtures for each documented variant. |
 | `haicom` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `kenji` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `laipac` | Exact Traccar archive match | Decode and encoder logic are present; command declaration added. |
@@ -129,7 +132,7 @@ verified, especially for:
 | `tr20` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
 | `tr900` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `trackbox` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
-| `wondex` | Exact Traccar archive match | Decode, keepalive echo, and archived command support are migrated. |
+| `wondex` | Exact Traccar archive match | Decode, keepalive echo, and archived command support are migrated and covered by fixtures. |
 | `ywt` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
 
 ## Drivers Without Downloaded Protocol Documentation
@@ -154,8 +157,8 @@ checkout does not include matching archived Java protocol files for them.
 
 ## Recommended Next Steps
 
-1. Add real protocol-document fixture samples for `gl100`, `gotop`, `svias`,
-   `wondex`, `mictrack`, `laipac`, and `pretrace` as source examples become
-   machine-readable.
+1. Add additional protocol-document fixture samples for `gl100`, `gotop`,
+   `svias`, `wondex`, `mictrack`, `laipac`, and `pretrace` as exact source
+   examples become machine-readable.
 2. Continue sourcing protocol documentation for the 37 undocumented drivers, then
    repeat this audit with the new documents.
