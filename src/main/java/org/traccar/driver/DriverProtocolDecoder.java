@@ -124,6 +124,10 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
         return getDeviceSession(channel, remoteAddress, uniqueId);
     }
 
+    DeviceSession session(Channel channel, SocketAddress remoteAddress) {
+        return getDeviceSession(channel, remoteAddress);
+    }
+
     void lastLocation(Position position) {
         getLastLocation(position, null);
     }

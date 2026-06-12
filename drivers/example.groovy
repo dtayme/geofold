@@ -122,7 +122,7 @@ protocol("example") {
         // Decode closure
         //
         // msg — the raw trimmed message string extracted by the frame decoder
-        // ctx — DecodeContext: session(), newPosition(), ack(), alarm(), lastLocation()
+        // ctx — DecodeContext: session(id), session(), newPosition(), ack(), alarm(), lastLocation()
         //
         // Return a populated Position or null (null keeps the connection alive
         // but stores nothing — use it for heartbeats and ACK-only messages).
@@ -146,6 +146,9 @@ protocol("example") {
             def event   = m.group(12)
 
             // 3. Resolve the device session (returns null if IMEI is unknown/blocked)
+            //    ctx.session(imei)  — look up/register by device ID (most messages)
+            //    ctx.session()      — look up existing channel session (follow-up messages
+            //                        with no device ID, e.g. command responses)
             def session = ctx.session(imei)
             if (!session) return null
 

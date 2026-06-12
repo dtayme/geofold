@@ -47,6 +47,16 @@ public final class DecodeContext {
         return decoder.session(channel, remoteAddress, uniqueId);
     }
 
+    /**
+     * Returns the existing session for the current channel without registering
+     * a new device. Useful for protocols where some messages (e.g. command
+     * responses) arrive after the device has already been identified.
+     * Returns {@code null} if no session exists yet.
+     */
+    public DeviceSession session() {
+        return decoder.session(channel, remoteAddress);
+    }
+
     /** Creates a new {@link Position} pre-tagged with the protocol name. */
     public Position newPosition() {
         return new Position(decoder.protocolName());
