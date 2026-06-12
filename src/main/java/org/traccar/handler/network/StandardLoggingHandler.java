@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Modified by FOGNETX <Drew.Taylor@fognetx.com>, 2026. Modifications licensed under
+// AGPL-3.0-or-later (SPDX-License-Identifier: AGPL-3.0-or-later).
+
 package org.traccar.handler.network;
 
 import io.netty.buffer.ByteBuf;
