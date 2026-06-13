@@ -59,7 +59,6 @@ import org.traccar.protocol.StartekProtocol;
 import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.T622IridiumProtocol;
-import org.traccar.protocol.T800xProtocol;
 import org.traccar.protocol.TaipProtocol;
 import org.traccar.protocol.TeltonikaProtocol;
 import org.traccar.protocol.Tk103Protocol;
@@ -130,7 +129,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(CastelProtocol.class, 5086);
         put(AdmProtocol.class, 5092);
         put(WatchProtocol.class, 5093);
-        put(T800xProtocol.class, 5094);
         put(HuaShengProtocol.class, 5111);
         put(FifotrackProtocol.class, 5124);
         put(GlobalstarProtocol.class, 5185);

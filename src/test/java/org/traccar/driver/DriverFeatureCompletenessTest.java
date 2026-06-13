@@ -118,6 +118,8 @@ public class DriverFeatureCompletenessTest {
                 Command.TYPE_POSITION_STOP,
                 Command.TYPE_ENGINE_STOP,
                 Command.TYPE_ENGINE_RESUME), loadDriver("noran").getSupportedCommands());
+
+        assertEquals(Set.of(Command.TYPE_CUSTOM), loadDriver("t800x").getSupportedCommands());
     }
 
     @Test
@@ -214,6 +216,16 @@ public class DriverFeatureCompletenessTest {
                 command(Command.TYPE_POSITION_SINGLE), ctx);
         assertEquals("*KW,000,000,000000#",
                 new String(noranPositionSingle, 16, 19, StandardCharsets.US_ASCII));
+
+        DriverDefinition t800x = loadDriver("t800x");
+        assertArrayEquals(new byte[] {
+                0x23, 0x23, (byte) 0x81, 0x00, 0x1e, 0x00, 0x01, 0x01,
+                0x23, 0x45, 0x67, (byte) 0x89, 0x01, 0x23, 0x45, 0x01,
+                0x52, 0x45, 0x4c, 0x41, 0x59, 0x2c, 0x30, 0x30, 0x30,
+                0x30, 0x2c, 0x4f, 0x6e, 0x23},
+                (byte[]) variant(t800x, "h2323").getEncodeClosure().call(
+                        commandWithData(Command.TYPE_CUSTOM, "RELAY,0000,On#"),
+                        new FakeEncodeContext("RELAY,0000,On#")));
     }
 
     @Test
@@ -320,6 +332,18 @@ public class DriverFeatureCompletenessTest {
         DriverDefinition skypatrol = loadDriver("skypatrol");
         assertEquals(5021, skypatrol.getDefaultPort());
         assertEquals(Set.of(DriverTransport.UDP), skypatrol.getTransports());
+
+        DriverDefinition t800x = loadDriver("t800x");
+        assertEquals(5094, t800x.getDefaultPort());
+        assertEquals(Set.of(DriverTransport.TCP, DriverTransport.UDP), t800x.getTransports());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(t800x, "h2323").getFrameSpec().getMode());
+        assertEquals(3, variant(t800x, "h2323").getFrameSpec().getLengthFieldOffset());
+        assertEquals(2, variant(t800x, "h2323").getFrameSpec().getLengthFieldLength());
+        assertEquals(-5, variant(t800x, "h2323").getFrameSpec().getLengthAdjustment());
+        assertEquals((byte) 0x23, variant(t800x, "h2323").getFrameByteHint());
+        assertEquals((byte) 0x25, variant(t800x, "h2525").getFrameByteHint());
+        assertEquals((byte) 0x26, variant(t800x, "h2626").getFrameByteHint());
+        assertEquals((byte) 0x27, variant(t800x, "h2727").getFrameByteHint());
     }
 
     @Test

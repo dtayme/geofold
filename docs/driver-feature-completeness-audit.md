@@ -139,6 +139,7 @@ documents as those documents become machine-readable.
 | `stl060` | Exact Traccar archive match | Migrated from Java; `#`-delimited D001 records, preamble-tolerant matching, old and new tail layouts, coordinates, inputs, outputs, odometer, fuel, RFID, temperature, charge, acceleration, and validity are covered by Java-parity fixtures. |
 | `tk102` | Exact Traccar archive match | Decode, login, heartbeat ACK, and length-field framing appear aligned with archived Java. |
 | `tlt2h` | Exact Traccar archive match | Large `##`-terminated messages, GPS, Wi-Fi, batch handling, and alarms appear aligned with archived Java. |
+| `t800x` | Exact Traccar archive match | Migrated from Java; 0x2323/0x2525/0x2626/0x2727 binary framing, login and heartbeat ACKs, GPS/alarm reports, network reports, driver-behavior reports, BLE reports, command-result reports, protocol ACK config, and custom command encoding are covered by Java-parity fixtures. |
 | `thinkpower` | Exact Traccar archive match | Migrated from Java; binary login, heartbeat, record reports, value tags, alarms, signed-magnitude coordinates, and ACK CRCs are covered by Java-parity fixtures. |
 | `topflyftech` | Alias: Topflytech/T800X docs | Decode framing appears aligned with archived Java; outbound command coverage needs doc review. |
 | `tr20` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |

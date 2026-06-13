@@ -30,9 +30,9 @@ requires a protocol-by-protocol source review.
 - Undocumented Java protocol implementations archived from the active source
   tree: 140
 - Active documented, official, or alias-documented Java protocol
-  implementations remaining in `src/main/java/org/traccar/protocol/`: 54
+  implementations remaining in `src/main/java/org/traccar/protocol/`: 53
 - Documented Java protocol implementations migrated to Groovy after this audit:
-  14
+  15
 
 ## Method
 
@@ -89,6 +89,7 @@ table:
 | `riti` | `docs/driver-source-docs/traccar-protocols/riti/` | Migrated to `drivers/riti.groovy`; Java implementation and protocol test archived under `archived-protocols/riti/`. |
 | `skypatrol` | `docs/driver-source-docs/traccar-protocols/skypatrol/` | Migrated to `drivers/skypatrol.groovy`; Java implementation and protocol test archived under `archived-protocols/skypatrol/`. |
 | `stl060` | `docs/driver-source-docs/traccar-protocols/stl060/` | Migrated to `drivers/stl060.groovy`; Java implementation, frame decoder, and protocol test archived under `archived-protocols/stl060/`. |
+| `t800x` | `docs/driver-source-docs/traccar-protocols/t800x/` | Migrated to `drivers/t800x.groovy`; Java implementation, encoder, and protocol tests archived under `archived-protocols/t800x/`. |
 | `thinkpower` | `docs/driver-source-docs/traccar-protocols/thinkpower/` | Migrated to `drivers/thinkpower.groovy`; Java implementation and protocol test archived under `archived-protocols/thinkpower/`. |
 | `v680` | `docs/driver-source-docs/traccar-protocols/v680/` | Migrated to `drivers/v680.groovy`; Java implementation and protocol test archived under `archived-protocols/v680/`. |
 

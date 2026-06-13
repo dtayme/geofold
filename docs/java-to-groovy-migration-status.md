@@ -26,12 +26,13 @@ documentation, with archived Java parity used only as supporting evidence.
 | `riti` | Migrated to `drivers/riti.groovy`, backed by the downloaded Riti Air Communication Protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/riti/`. |
 | `skypatrol` | Migrated to `drivers/skypatrol.groovy`, backed by the downloaded SkyPatrol position report PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/skypatrol/`. |
 | `stl060` | Migrated to `drivers/stl060.groovy`, backed by the downloaded STL060 protocol document and Java-parity driver decode tests. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/stl060/`. |
+| `t800x` | Migrated to `drivers/t800x.groovy`, backed by the downloaded Topflytech/T800X protocol documents, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol tests moved to `archived-protocols/t800x/`. |
 | `thinkpower` | Migrated to `drivers/thinkpower.groovy`, backed by the downloaded ThinkPower tracker protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/thinkpower/`. |
 | `v680` | Migrated to `drivers/v680.groovy`, backed by the downloaded V680 GPRS protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/v680/`. |
 
 ## Remaining Active Java Protocols
 
-54 documented, official, or alias-documented Java protocol implementations
+53 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
