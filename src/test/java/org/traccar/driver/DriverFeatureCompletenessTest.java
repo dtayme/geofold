@@ -67,6 +67,11 @@ public class DriverFeatureCompletenessTest {
 
         assertEquals(Set.of(
                 Command.TYPE_CUSTOM,
+                Command.TYPE_ENGINE_STOP,
+                Command.TYPE_ENGINE_RESUME), loadDriver("enfora").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_CUSTOM,
                 Command.TYPE_REBOOT_DEVICE,
                 Command.TYPE_POSITION_PERIODIC,
                 Command.TYPE_MODE_DEEP_SLEEP,
@@ -154,6 +159,23 @@ public class DriverFeatureCompletenessTest {
                 command(Command.TYPE_POSITION_PERIODIC), ctx)));
         assertEquals("@@12345678901234&A430700003039##", String.valueOf(variant(cartrack, "main").getEncodeClosure().call(
                 commandWithData(Command.TYPE_SET_ODOMETER, "12345"), new FakeEncodeContext("12345"))));
+
+        DriverDefinition enfora = loadDriver("enfora");
+        assertArrayEquals(new byte[] {
+                0x00, 0x10, 0x00, 0x00, 0x04, 0x00,
+                0x41, 0x54, 0x24, 0x49, 0x4f, 0x47, 0x50, 0x33, 0x3d, 0x31},
+                (byte[]) variant(enfora, "main").getEncodeClosure().call(
+                        command(Command.TYPE_ENGINE_STOP), ctx));
+        assertArrayEquals(new byte[] {
+                0x00, 0x10, 0x00, 0x00, 0x04, 0x00,
+                0x41, 0x54, 0x24, 0x49, 0x4f, 0x47, 0x50, 0x33, 0x3d, 0x30},
+                (byte[]) variant(enfora, "main").getEncodeClosure().call(
+                        command(Command.TYPE_ENGINE_RESUME), ctx));
+        assertArrayEquals(new byte[] {
+                0x00, 0x0e, 0x00, 0x00, 0x04, 0x00,
+                0x41, 0x54, 0x2b, 0x54, 0x45, 0x53, 0x54, 0x3f},
+                (byte[]) variant(enfora, "main").getEncodeClosure().call(
+                        commandWithData(Command.TYPE_CUSTOM, "AT+TEST?"), new FakeEncodeContext("AT+TEST?")));
     }
 
     @Test
@@ -195,6 +217,21 @@ public class DriverFeatureCompletenessTest {
         assertEquals(FrameSpec.Mode.READ_FIXED, m2mMain.getFrameSpec().getMode());
         assertEquals(23, m2mMain.getFrameSpec().getSize());
         assertEquals(null, m2mMain.getFrameByteHint());
+
+        DriverDefinition enfora = loadDriver("enfora");
+        VariantDefinition enforaMain = variant(enfora, "main");
+        assertEquals(5008, enfora.getDefaultPort());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, enforaMain.getFrameSpec().getMode());
+        assertEquals(0, enforaMain.getFrameSpec().getLengthFieldOffset());
+        assertEquals(2, enforaMain.getFrameSpec().getLengthFieldLength());
+        assertEquals(-2, enforaMain.getFrameSpec().getLengthAdjustment());
+        assertEquals(null, enforaMain.getFrameByteHint());
+
+        DriverDefinition orion = loadDriver("orion");
+        VariantDefinition orionUserlog = variant(orion, "userlog");
+        assertEquals(5070, orion.getDefaultPort());
+        assertEquals((byte) 0x50, orionUserlog.getFrameByteHint());
+        assertEquals(FrameSpec.Mode.READ_SCRIPTED, orionUserlog.getFrameSpec().getMode());
     }
 
     @Test

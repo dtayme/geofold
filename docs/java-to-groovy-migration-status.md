@@ -15,12 +15,14 @@ documentation, with archived Java parity used only as supporting evidence.
 | Protocol | Result |
 | --- | --- |
 | `cartrack` | Migrated to `drivers/cartrack.groovy`, backed by the downloaded CarTrack GTP PDF, driver decode tests, command-declaration tests, and command encoder tests. Java source and old Java protocol test moved to `archived-protocols/cartrack/`. |
+| `enfora` | Migrated to `drivers/enfora.groovy`, backed by the downloaded Enfora API and Mini-MT PDFs, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol test moved to `archived-protocols/enfora/`. |
 | `m2m` | Migrated to `drivers/m2m.groovy`, backed by the downloaded M2M protocol spreadsheet and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/m2m/`. |
+| `orion` | Migrated to `drivers/orion.groovy`, backed by the downloaded Orion binary protocol PDF, scripted-frame driver tests, ACK coverage, and Java-parity position fixtures. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/orion/`. |
 | `riti` | Migrated to `drivers/riti.groovy`, backed by the downloaded Riti Air Communication Protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/riti/`. |
 
 ## Remaining Active Java Protocols
 
-65 documented, official, or alias-documented Java protocol implementations
+63 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the

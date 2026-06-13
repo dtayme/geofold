@@ -22,13 +22,13 @@ fictional sample protocol.
 
 ## Download Summary
 
-- Groovy production drivers checked during research and migration: 65
+- Groovy production drivers checked during research and migration: 67
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 28
+  `drivers/`: 30
 - Undocumented Groovy drivers moved to
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files: 45
-- Drivers with exact public documentation match: 24
+- Downloaded documentation files: 48
+- Drivers with exact public documentation match: 26
 - Drivers covered by alias/vendor-family documentation: 4
 - Drivers without a public downloadable protocol document found in this pass: 37
 
@@ -40,6 +40,7 @@ fictional sample protocol.
 | `box` | Exact Traccar archive match | `traccar-protocols/box/` |
 | `cartrack` | Exact Traccar archive match | `traccar-protocols/cartrack/` |
 | `carscop` | Exact Traccar archive match | `traccar-protocols/carscop/` |
+| `enfora` | Exact Traccar archive match | `traccar-protocols/enfora/` |
 | `gl100` | Alias: Queclink GL100/GL200-family docs | `traccar-protocols/gl200/` |
 | `gotop` | Exact Traccar archive match | `traccar-protocols/gotop/` |
 | `gpsmarker` | Exact Traccar archive match | `traccar-protocols/gpsmarker/` |
@@ -53,6 +54,7 @@ fictional sample protocol.
 | `m2m` | Exact Traccar archive match | `traccar-protocols/m2m/` |
 | `mictrack` | Vendor protocol downloads | `external/mictrack/` |
 | `nto` | Exact Traccar archive match | `traccar-protocols/nto/` |
+| `orion` | Exact Traccar archive match | `traccar-protocols/orion/` |
 | `pt3000` | Exact Traccar archive match | `traccar-protocols/pt3000/` |
 | `r16h` | Exact Traccar archive match | `traccar-protocols/r16h/` |
 | `riti` | Exact Traccar archive match | `traccar-protocols/riti/` |
