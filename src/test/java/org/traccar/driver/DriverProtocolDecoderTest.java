@@ -208,6 +208,31 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
     }
 
     @Test
+    public void testRitiDecode() throws Exception {
+        var decoder = decoder("riti");
+
+        verifyPosition(decoder, binary(
+                "3b28a2a2056315316d4000008100000000000000005f710000244750524d432c3138303535332e3030302c412c353532342e383437312c4e2c30313133342e313837382c452c302e30302c2c3032313231332c2c2c412a37340d0a00000000000000000000000000000000040404"),
+                position("2013-12-02 18:05:53.000", true, 55.41412, 11.56980));
+
+        verifyPosition(decoder, binary(
+                "3b2864a3056300006d40000003000000000000000000000000244750524d432c3231313734332e3030302c412c313335372e333637352c4e2c31303033362e363939322c452c302e30302c2c3031303931342c2c2c412a37380d0a00000000000000000000000000000000040404"),
+                position("2014-09-01 21:17:43.000", true, 13.95613, 100.61165));
+    }
+
+    @Test
+    public void testM2mDecode() throws Exception {
+        var decoder = decoder("m2m");
+
+        verifyNull(decoder, binary(
+                "235A3C2A2624215C287D70212A21254C7C6421220B0B0B"));
+
+        verifyPosition(decoder, binary(
+                "A6E12C2AAADA4628326B2059576E30202A2FE85D20200B"),
+                position("2012-01-06 10:10:58.000", true, 38.13646, 57.92969));
+    }
+
+    @Test
     public void testLaipacDecode() throws Exception {
         var decoder = decoder("laipac");
 

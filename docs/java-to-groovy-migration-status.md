@@ -15,10 +15,12 @@ documentation, with archived Java parity used only as supporting evidence.
 | Protocol | Result |
 | --- | --- |
 | `cartrack` | Migrated to `drivers/cartrack.groovy`, backed by the downloaded CarTrack GTP PDF, driver decode tests, command-declaration tests, and command encoder tests. Java source and old Java protocol test moved to `archived-protocols/cartrack/`. |
+| `m2m` | Migrated to `drivers/m2m.groovy`, backed by the downloaded M2M protocol spreadsheet and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/m2m/`. |
+| `riti` | Migrated to `drivers/riti.groovy`, backed by the downloaded Riti Air Communication Protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/riti/`. |
 
 ## Remaining Active Java Protocols
 
-67 documented, official, or alias-documented Java protocol implementations
+65 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
@@ -29,8 +31,8 @@ safe migration.
 
 Recommended order:
 
-1. Continue with simple documented text protocols whose Java pipelines use
-   line or fixed terminator framing and no custom HTTP handlers.
+1. Continue with simple documented text or simple binary protocols whose Java
+   pipelines use standard DSL framing and no custom HTTP handlers.
 2. Add driver framework support for HTTP protocols before migrating OsmAnd,
    Globalstar, or other servlet-style protocols.
 3. Migrate complex binary protocols only after each protocol has complete

@@ -30,9 +30,9 @@ requires a protocol-by-protocol source review.
 - Undocumented Java protocol implementations archived from the active source
   tree: 140
 - Active documented, official, or alias-documented Java protocol
-  implementations remaining in `src/main/java/org/traccar/protocol/`: 67
+  implementations remaining in `src/main/java/org/traccar/protocol/`: 65
 - Documented Java protocol implementations migrated to Groovy after this audit:
-  1
+  3
 
 ## Method
 
@@ -78,6 +78,8 @@ table:
 | Protocol | Documentation | Notes |
 | --- | --- | --- |
 | `cartrack` | `docs/driver-source-docs/traccar-protocols/cartrack/` | Migrated to `drivers/cartrack.groovy`; Java implementation and protocol test archived under `archived-protocols/cartrack/`. |
+| `m2m` | `docs/driver-source-docs/traccar-protocols/m2m/` | Migrated to `drivers/m2m.groovy`; Java implementation and protocol test archived under `archived-protocols/m2m/`. |
+| `riti` | `docs/driver-source-docs/traccar-protocols/riti/` | Migrated to `drivers/riti.groovy`; Java implementation and protocol test archived under `archived-protocols/riti/`. |
 
 ## No Exact Public Traccar Archive Match
 

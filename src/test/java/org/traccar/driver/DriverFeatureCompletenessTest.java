@@ -179,6 +179,22 @@ public class DriverFeatureCompletenessTest {
         assertEquals((byte) '%', pt3000Main.getFrameByteHint());
         assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, pt3000Main.getFrameSpec().getMode());
         assertArrayEquals(new byte[] {'d'}, pt3000Main.getFrameSpec().getTerminator());
+
+        DriverDefinition riti = loadDriver("riti");
+        VariantDefinition ritiMain = variant(riti, "main");
+        assertEquals((byte) 0x3B, ritiMain.getFrameByteHint());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, ritiMain.getFrameSpec().getMode());
+        assertEquals(105, ritiMain.getFrameSpec().getLengthFieldOffset());
+        assertEquals(2, ritiMain.getFrameSpec().getLengthFieldLength());
+        assertEquals(3, ritiMain.getFrameSpec().getLengthAdjustment());
+        assertEquals(true, ritiMain.getFrameSpec().isLengthFieldLittleEndian());
+
+        DriverDefinition m2m = loadDriver("m2m");
+        VariantDefinition m2mMain = variant(m2m, "main");
+        assertEquals(5054, m2m.getDefaultPort());
+        assertEquals(FrameSpec.Mode.READ_FIXED, m2mMain.getFrameSpec().getMode());
+        assertEquals(23, m2mMain.getFrameSpec().getSize());
+        assertEquals(null, m2mMain.getFrameByteHint());
     }
 
     @Test

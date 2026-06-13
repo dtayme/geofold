@@ -22,13 +22,13 @@ fictional sample protocol.
 
 ## Download Summary
 
-- Groovy production drivers checked during research and migration: 63
+- Groovy production drivers checked during research and migration: 65
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 26
+  `drivers/`: 28
 - Undocumented Groovy drivers moved to
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files: 43
-- Drivers with exact public documentation match: 22
+- Downloaded documentation files: 45
+- Drivers with exact public documentation match: 24
 - Drivers covered by alias/vendor-family documentation: 4
 - Drivers without a public downloadable protocol document found in this pass: 37
 
@@ -50,10 +50,12 @@ fictional sample protocol.
 | `haicom` | Exact Traccar archive match | `traccar-protocols/haicom/` |
 | `kenji` | Exact Traccar archive match | `traccar-protocols/kenji/` |
 | `laipac` | Exact Traccar archive match | `traccar-protocols/laipac/` |
+| `m2m` | Exact Traccar archive match | `traccar-protocols/m2m/` |
 | `mictrack` | Vendor protocol downloads | `external/mictrack/` |
 | `nto` | Exact Traccar archive match | `traccar-protocols/nto/` |
 | `pt3000` | Exact Traccar archive match | `traccar-protocols/pt3000/` |
 | `r16h` | Exact Traccar archive match | `traccar-protocols/r16h/` |
+| `riti` | Exact Traccar archive match | `traccar-protocols/riti/` |
 | `tk102` | Exact Traccar archive match | `traccar-protocols/tk102/` |
 | `tlt2h` | Exact Traccar archive match | `traccar-protocols/tlt2h/` |
 | `topflyftech` | Alias: Topflytech/T800X docs | `traccar-protocols/topflytech/`, `traccar-protocols/t800x/` |
