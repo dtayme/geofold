@@ -427,6 +427,161 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
     }
 
     @Test
+    public void testGpsGateDecode() throws Exception {
+        var decoder = decoder("gpsgate");
+
+        verifyPosition(decoder, text(
+                "$FRCMD,0097,_SendMessage,,7618.51990,S,4002.26182,E,350.0,1.08,0.0,250816,183522.000,0*7F"));
+
+        verifyPosition(decoder, text(
+                "$FRCMD,356406061385182,_SendMessage,,5223.88542,N,11440.45866,W,951.2,0.027,,220716,153507.00,1*5F"));
+
+        verifyPosition(decoder, text(
+                "$FRCMD,353067011068246,_SendMessage,,1918.1942,N,09906.3696,W,2246.5,000.0,295.9,150416,213147.00,1,Odometer=*70"));
+
+        verifyNull(decoder, text(
+                "$FRCMD,862950025974620,_Ping,voltage=4*4F"));
+
+        verifyPosition(decoder, text(
+                "$FRCMD,862950025974620,_SendMessage, ,2721.5781,S,15259.145,E,61,0.00,61,080316,092612,1,SosButton=0,voltage=4*60"));
+
+        verifyNull(decoder, text(
+                "$FRLIN,,user1,8IVHF*7A"));
+
+        verifyNull(decoder, text(
+                "$FRLIN,,354503026292842,VGZTHKT*0C"));
+
+        verifyNull(decoder, text(
+                "$FRLIN,IMEI,1234123412341234,*7B"));
+
+        verifyNull(decoder, text(
+                "$FRLIN,,saab93_device,KLRFBGIVDJ*28"));
+
+        verifyPosition(decoder, text(
+                "$GPRMC,154403.000,A,6311.64120,N,01438.02740,E,0.000,0.0,270707,,*0A"),
+                position("2007-07-27 15:44:03.000", true, 63.19402, 14.63379));
+
+        verifyPosition(decoder, text(
+                "$GPRMC,074524,A,5553.73701,N,03728.90491,E,10.39,226.5,160614,0.0,E*75"));
+
+        verifyPosition(decoder, text(
+                "$GPRMC,154403.000,A,6311.64120,N,01438.02740,E,0.000,0.0,270707,,*0A"));
+    }
+
+    @Test
+    public void testThinkPowerDecode() throws Exception {
+        var decoder = decoder("thinkpower");
+
+        verifyNull(decoder, binary(
+                "0103002C01020F38363737333030353038323030343606544C3930344111522D312E302E31372E32303231303431300011C3"));
+
+        verifyPosition(decoder, binary(
+                "05300012016099E995010D743CC943EB481500000000EED4"));
+
+        verifyPosition(decoder, binary(
+                "05000007016099E768020162D8"));
+
+        verifyNull(decoder, binary(
+                "03040000C3DC"));
+    }
+
+    @Test
+    public void testMxtDecode() throws Exception {
+        var decoder = decoder("mxt");
+
+        verifyPosition(decoder, binary(
+                "01a631a7627b00087dc41c40850006aab70affecdf23fd32200080000600000000000000000000001b2ff03b1bb9c4c60214f40100050000006c2d0000f427600051051101de0704"));
+
+        verifyPosition(decoder, binary(
+                "01a631144c7e0008643ad2f456fb2d49747cfe4cbe0ffd002008800000001021000fd43d3f1403000000ff300000f42760001031102445a81fda04"));
+
+        verifyPosition(decoder, binary(
+                "01a631361e7a00082471418b052a2c46b587ffc01ae3fd000008800000000000003345422203000000f000f00000000000ea1e04"));
+
+        verifyPosition(decoder, binary(
+                "01a63118787d00086440628d226e2bc26a97feac8a3afd10210010308000000000000018003d2b10240000005e2f0000f427f21031feff0000593804"));
+
+        verifyPosition(decoder, binary(
+                "01a631bd777d0008646e319e17292ce86798fed4cd3afd102110211030800000102403001f15003e2b102400000034300000f4271021007b175535a7be04"));
+
+        verifyPosition(decoder, binary(
+                "01a631e3f97e00087cf40a98151c2cc46898fee0ce3afd1021001030c0000006102116072e003829bb00000036102100001024000000062b0000f42730004b06a6384b4304"));
+
+        verifyPosition(decoder, binary(
+                "01a63118787d00086468457a466a2bc26a97feac8a3afd10212010308000000000001fe1053d291024000000922f0000f4271021007b17553599bb04"));
+
+        verifyPosition(decoder, binary(
+                "01a63118787d0008648645ec486a2bc26a97feac8a3afd1021001030c0000000001419eb05372b1024000000982a0000f4271021007b17000010308c04"));
+
+        verifyPosition(decoder, binary(
+                "01a631e3f97e00087cfa0af3151c2c126798febace3afd1021801030c0000006102122082f003e29bb00000037102100001024000000ab2f0000f42730004b060000488c04"));
+
+        verifyPosition(decoder, binary(
+                "01a631e3f97e00087cfe0a4b161c2c126798febace3afd1021801030800000071021240731003e2abb00000038102100001024000000c12f0000f42730004b06a638633104"));
+
+        verifyPosition(decoder, binary(
+                "01a63118787d0008648645ec486a2bc26a97feac8a3afd1021001030c0000000001419eb05372b1024000000982a0000f4271021007b17000010308c04"));
+    }
+
+    @Test
+    public void testNoranDecode() throws Exception {
+        var decoder = decoder("noran");
+
+        verifyNull(decoder, binary(
+                "0d0a2a4b57000d000080010d0a"));
+
+        verifyPosition(decoder, binary(
+                "34000800010b0000000000003f43bb8da6c2ebe229424e523039423233343439000031362d30392d31352030373a30303a303700"));
+
+        verifyPosition(decoder, binary(
+                "28003200c380000000469458408c4ad340ad381e3f4e52303947313336303900000001ff00002041"));
+
+        verifyPosition(decoder, binary(
+                "28003200c38000d900fcc97a416b1a7a42b43eef3d4e523039473034383737000000000092fcda4a"));
+
+        verifyPosition(decoder, binary(
+                "3400080001090000000000001D43A29BE842E62520424E523039423036363932000031322D30332D30352031313A34373A343300"));
+
+        verifyPosition(decoder, binary(
+                "34000800010c000000000080a3438e20944149bd07c24e523039423139323832000031352d30342d32362030383a34333a353300"));
+
+        verifyNull(decoder, binary(
+                "0f0000004e52303946303431353500"));
+
+        verifyPosition(decoder, binary(
+                "22000800010c008a007e9daa42317bdd41a7f3e2384e523039463034313535000000"));
+
+        verifyPosition(decoder, binary(
+                "34000800010c0000000000001c4291251143388d17c24e523039423131303930000031342d31322d32352030303a33333a303700"));
+
+        verifyPosition(decoder, binary(
+                "34000800010c00000000000000006520944141bd07c24e523039423139323832000031352d30342d32352030303a30333a323200"));
+    }
+
+    @Test
+    public void testSkypatrolDecode() throws Exception {
+        var decoder = decoder("skypatrol");
+
+        verifyNull(decoder, binary(
+                "000a02171101303131373232303031333537393833060200000006202020202020202020312020202020202030313137323230303133353739383320"));
+
+        verifyNull(decoder, binary(
+                "000402171101303131373232303031333537393833060200081046202020202020202020392020202020202030313137323230303133353739383320244750524d432c3134303931372e30302c412c333330322e3230313132352c532c30373133352e3837383338332c572c302e302c302e302c3036303731372c322e382c572c412a32370d0a00"));
+
+        verifyPosition(decoder, binary(
+                "0005021004FFFFFFFF0000000D313134373735383300CB000000000E11070C010184D032FB3841370000000016072B000017050032000000000000024E0C071116072C105900050000000000050000000000050000000003100260B7363B6306C11A00B73637F206BF19B73637F106B50EB73638B106BB0BB7363B6106B80AB73637F306B709000000000000000000"));
+
+        verifyNull(decoder, binary(
+                "000500030101383637383434303031373832333336420102000c0000fa07b5e101876c5b0e0a111606131c1b5e"));
+
+        verifyNull(decoder, binary(
+                "000502000000f1143035303031393031d1df002f00000d0187120115e556ff762aa90000000000aae40005d2000ee1bc0e010a042530000000000000070004000002233c096c00ee2a00233c008500f022233c0b0500f21d233c000000fb23000000000000000000000000000000000000000000000000"));
+
+        verifyNull(decoder, binary(
+                "00040200202020202020202020382020202020202030313137323230303131383531373820313220244750524d432c3232343833392e30302c412c303332382e3433383830362c4e2c30373633312e3630373731372c572c302e302c302e302c3139303731342c332e382c452c412a32420d0a00"));
+    }
+
+    @Test
     public void testLaipacDecode() throws Exception {
         var decoder = decoder("laipac");
 

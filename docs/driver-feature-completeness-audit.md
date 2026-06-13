@@ -19,13 +19,13 @@ the available protocol documentation.
 
 ## Scope
 
-- Production Groovy drivers checked during research and migration: 71
+- Production Groovy drivers checked during research and migration: 76
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 34
+  `drivers/`: 39
 - Undocumented Groovy drivers archived under
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files available locally: 52
-- Drivers with exact downloaded protocol documentation: 30
+- Downloaded documentation files available locally: 58
+- Drivers with exact downloaded protocol documentation: 35
 - Drivers covered by alias or vendor-family documentation: 4
 - Drivers without downloaded public documentation in this pass: 37
 
@@ -116,6 +116,7 @@ documents as those documents become machine-readable.
 | `enfora` | Exact Traccar archive match | Migrated from Java; Enfora API length-field framing, IMEI/GPRMC scan decode, custom command pass-through, and engine stop/resume commands are covered by Java-parity fixtures. |
 | `gl100` | Alias: Queclink GL100/GL200-family docs | Null-terminated position and heartbeat framing are implemented and covered by fixtures; exact GL100 source examples still need extraction. |
 | `gotop` | Exact Traccar archive match | `#`-terminated framing is implemented and covered by fixture. |
+| `gpsgate` | Exact Traccar archive match | Migrated from Java; FRLIN/FRVER handling, GPRMC and FRCMD position parsing, NMEA acknowledgements, and NUL/LF/CRLF scripted TCP framing are covered by Java-parity fixtures. |
 | `gpsmarker` | Exact Traccar archive match | Decode and CR framing appear aligned with archived Java. |
 | `gpsmta` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `gt02` | Exact Traccar archive match | Decode, login, heartbeat ACK, and length-field framing appear aligned with archived Java. |
@@ -126,15 +127,19 @@ documents as those documents become machine-readable.
 | `laipac` | Exact Traccar archive match | Decode and encoder logic are present; command declaration added. |
 | `m2m` | Exact Traccar archive match | Migrated from Java; fixed 23-byte framing, offset removal, login/session registration, position decode, and satellite validation are covered by Java-parity fixtures. |
 | `mictrack` | Vendor protocol downloads | Decode and encoder logic are present for HQ and MT700 variants; command declaration added. |
+| `mxt` | Exact Traccar archive match | Migrated from Java; escaped binary framing, position reports, flags, extended info groups, and ACK frame construction are covered by Java-parity fixtures. |
+| `noran` | Exact Traccar archive match | Migrated from Java; UDP handshake, old/new position formats, alarms, control responses, and position/engine command encoders are covered by Java-parity fixtures. |
 | `nto` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `orion` | Exact Traccar archive match | Migrated from Java; scripted binary frame extraction, multi-record userlog decode, optional ACK, flags, event, speed, course, altitude, and satellite validity are covered by Java-parity fixtures. |
 | `pt3000` | Exact Traccar archive match | Delimiter verified against the remotely readable Traccar PDF rendering; `readUntil("d")` is retained. |
 | `ramac` | Exact Traccar archive match | Migrated from Java; HTTP JSON callback matching, status/GPS/alert payload fields, last-location fallback, and documented JSON acknowledgement are covered by Java-parity fixtures. |
 | `r16h` | Exact Traccar archive match | Decode, delimiter, and alarm handling appear aligned with archived Java. |
 | `riti` | Exact Traccar archive match | Migrated from Java; binary little-endian length-field framing, GPRMC decode, power, command, distance, and trip odometer fields are covered by Java-parity fixtures. |
+| `skypatrol` | Exact Traccar archive match | Migrated from Java for API 5 binary reports with embedded masks; fixture coverage matches archived default behavior. Packets that require external `protocol.mask` configuration need a future driver config API before full parity. |
 | `stl060` | Exact Traccar archive match | Migrated from Java; `#`-delimited D001 records, preamble-tolerant matching, old and new tail layouts, coordinates, inputs, outputs, odometer, fuel, RFID, temperature, charge, acceleration, and validity are covered by Java-parity fixtures. |
 | `tk102` | Exact Traccar archive match | Decode, login, heartbeat ACK, and length-field framing appear aligned with archived Java. |
 | `tlt2h` | Exact Traccar archive match | Large `##`-terminated messages, GPS, Wi-Fi, batch handling, and alarms appear aligned with archived Java. |
+| `thinkpower` | Exact Traccar archive match | Migrated from Java; binary login, heartbeat, record reports, value tags, alarms, signed-magnitude coordinates, and ACK CRCs are covered by Java-parity fixtures. |
 | `topflyftech` | Alias: Topflytech/T800X docs | Decode framing appears aligned with archived Java; outbound command coverage needs doc review. |
 | `tr20` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
 | `tr900` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |

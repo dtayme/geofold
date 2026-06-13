@@ -12,6 +12,7 @@ import org.traccar.model.Command;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -110,6 +111,13 @@ public class DriverFeatureCompletenessTest {
                 Command.TYPE_POSITION_SINGLE,
                 Command.TYPE_GET_VERSION,
                 Command.TYPE_IDENTIFICATION), loadDriver("wondex").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_POSITION_SINGLE,
+                Command.TYPE_POSITION_PERIODIC,
+                Command.TYPE_POSITION_STOP,
+                Command.TYPE_ENGINE_STOP,
+                Command.TYPE_ENGINE_RESUME), loadDriver("noran").getSupportedCommands());
     }
 
     @Test
@@ -200,6 +208,12 @@ public class DriverFeatureCompletenessTest {
         assertArrayEquals(cityeasyFrame(0x0008, new byte[] {0x00, 0x01, 0x68}),
                 (byte[]) variant(cityeasy, "main").getEncodeClosure().call(
                         commandWithTimezone("GMT+6"), ctx));
+
+        DriverDefinition noran = loadDriver("noran");
+        byte[] noranPositionSingle = (byte[]) variant(noran, "main").getEncodeClosure().call(
+                command(Command.TYPE_POSITION_SINGLE), ctx);
+        assertEquals("*KW,000,000,000000#",
+                new String(noranPositionSingle, 16, 19, StandardCharsets.US_ASCII));
     }
 
     @Test
@@ -283,6 +297,29 @@ public class DriverFeatureCompletenessTest {
         assertEquals(5060, stl060.getDefaultPort());
         assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, stl060Main.getFrameSpec().getMode());
         assertArrayEquals(new byte[] {'#'}, stl060Main.getFrameSpec().getTerminator());
+
+        DriverDefinition gpsgate = loadDriver("gpsgate");
+        assertEquals(5026, gpsgate.getDefaultPort());
+        assertEquals(FrameSpec.Mode.READ_SCRIPTED, variant(gpsgate, "main").getFrameSpec().getMode());
+
+        DriverDefinition thinkpower = loadDriver("thinkpower");
+        assertEquals(5228, thinkpower.getDefaultPort());
+        assertEquals(3, thinkpower.getVariants().size());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(thinkpower, "login").getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(thinkpower, "heartbeat").getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(thinkpower, "record").getFrameSpec().getMode());
+
+        DriverDefinition mxt = loadDriver("mxt");
+        assertEquals(5087, mxt.getDefaultPort());
+        assertEquals(FrameSpec.Mode.READ_ESCAPED_DELIMITER, variant(mxt, "main").getFrameSpec().getMode());
+
+        DriverDefinition noran = loadDriver("noran");
+        assertEquals(5053, noran.getDefaultPort());
+        assertEquals(Set.of(DriverTransport.UDP), noran.getTransports());
+
+        DriverDefinition skypatrol = loadDriver("skypatrol");
+        assertEquals(5021, skypatrol.getDefaultPort());
+        assertEquals(Set.of(DriverTransport.UDP), skypatrol.getTransports());
     }
 
     @Test

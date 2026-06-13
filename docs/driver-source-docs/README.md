@@ -22,13 +22,13 @@ fictional sample protocol.
 
 ## Download Summary
 
-- Groovy production drivers checked during research and migration: 71
+- Groovy production drivers checked during research and migration: 76
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 34
+  `drivers/`: 39
 - Undocumented Groovy drivers moved to
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files: 52
-- Drivers with exact public documentation match: 30
+- Downloaded documentation files: 58
+- Drivers with exact public documentation match: 35
 - Drivers covered by alias/vendor-family documentation: 4
 - Drivers without a public downloadable protocol document found in this pass: 37
 
@@ -44,6 +44,7 @@ fictional sample protocol.
 | `enfora` | Exact Traccar archive match | `traccar-protocols/enfora/` |
 | `gl100` | Alias: Queclink GL100/GL200-family docs | `traccar-protocols/gl200/` |
 | `gotop` | Exact Traccar archive match | `traccar-protocols/gotop/` |
+| `gpsgate` | Exact Traccar archive match | `traccar-protocols/gpsgate/` |
 | `gpsmarker` | Exact Traccar archive match | `traccar-protocols/gpsmarker/` |
 | `gpsmta` | Exact Traccar archive match | `traccar-protocols/gpsmta/` |
 | `gt02` | Exact Traccar archive match | `traccar-protocols/gt02/` |
@@ -54,15 +55,19 @@ fictional sample protocol.
 | `laipac` | Exact Traccar archive match | `traccar-protocols/laipac/` |
 | `m2m` | Exact Traccar archive match | `traccar-protocols/m2m/` |
 | `mictrack` | Vendor protocol downloads | `external/mictrack/` |
+| `mxt` | Exact Traccar archive match | `traccar-protocols/mxt/` |
+| `noran` | Exact Traccar archive match | `traccar-protocols/noran/` |
 | `nto` | Exact Traccar archive match | `traccar-protocols/nto/` |
 | `orion` | Exact Traccar archive match | `traccar-protocols/orion/` |
 | `pt3000` | Exact Traccar archive match | `traccar-protocols/pt3000/` |
 | `ramac` | Exact Traccar archive match | `traccar-protocols/ramac/` |
 | `r16h` | Exact Traccar archive match | `traccar-protocols/r16h/` |
 | `riti` | Exact Traccar archive match | `traccar-protocols/riti/` |
+| `skypatrol` | Exact Traccar archive match | `traccar-protocols/skypatrol/` |
 | `stl060` | Exact Traccar archive match | `traccar-protocols/stl060/` |
 | `tk102` | Exact Traccar archive match | `traccar-protocols/tk102/` |
 | `tlt2h` | Exact Traccar archive match | `traccar-protocols/tlt2h/` |
+| `thinkpower` | Exact Traccar archive match | `traccar-protocols/thinkpower/` |
 | `topflyftech` | Alias: Topflytech/T800X docs | `traccar-protocols/topflytech/`, `traccar-protocols/t800x/` |
 | `tr20` | Exact Traccar archive match | `traccar-protocols/tr20/` |
 | `tr900` | Exact Traccar archive match | `traccar-protocols/tr900/` |

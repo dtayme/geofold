@@ -17,16 +17,21 @@ documentation, with archived Java parity used only as supporting evidence.
 | `cartrack` | Migrated to `drivers/cartrack.groovy`, backed by the downloaded CarTrack GTP PDF, driver decode tests, command-declaration tests, and command encoder tests. Java source and old Java protocol test moved to `archived-protocols/cartrack/`. |
 | `cityeasy` | Migrated to `drivers/cityeasy.groovy`, backed by the downloaded Cityeasy protocol PDF, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol test moved to `archived-protocols/cityeasy/`. |
 | `enfora` | Migrated to `drivers/enfora.groovy`, backed by the downloaded Enfora API and Mini-MT PDFs, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol test moved to `archived-protocols/enfora/`. |
+| `gpsgate` | Migrated to `drivers/gpsgate.groovy`, backed by the downloaded GpsGate Server protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/gpsgate/`. |
 | `m2m` | Migrated to `drivers/m2m.groovy`, backed by the downloaded M2M protocol spreadsheet and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/m2m/`. |
+| `mxt` | Migrated to `drivers/mxt.groovy`, backed by the downloaded MXT protocol PDF and Java-parity driver decode tests. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/mxt/`. |
+| `noran` | Migrated to `drivers/noran.groovy`, backed by downloaded Noran protocol documents, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol test moved to `archived-protocols/noran/`. |
 | `orion` | Migrated to `drivers/orion.groovy`, backed by the downloaded Orion binary protocol PDF, scripted-frame driver tests, ACK coverage, and Java-parity position fixtures. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/orion/`. |
 | `ramac` | Migrated to `drivers/ramac.groovy`, backed by the downloaded Ramac callback PDF, HTTP driver decode tests, and JSON acknowledgement coverage. Java source and old Java protocol test moved to `archived-protocols/ramac/`. |
 | `riti` | Migrated to `drivers/riti.groovy`, backed by the downloaded Riti Air Communication Protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/riti/`. |
+| `skypatrol` | Migrated to `drivers/skypatrol.groovy`, backed by the downloaded SkyPatrol position report PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/skypatrol/`. |
 | `stl060` | Migrated to `drivers/stl060.groovy`, backed by the downloaded STL060 protocol document and Java-parity driver decode tests. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/stl060/`. |
+| `thinkpower` | Migrated to `drivers/thinkpower.groovy`, backed by the downloaded ThinkPower tracker protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/thinkpower/`. |
 | `v680` | Migrated to `drivers/v680.groovy`, backed by the downloaded V680 GPRS protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/v680/`. |
 
 ## Remaining Active Java Protocols
 
-59 documented, official, or alias-documented Java protocol implementations
+54 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
