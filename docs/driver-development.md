@@ -249,6 +249,11 @@ variants, receives a [`DriverHttpRequest`](#http-drivers). Return `true` if this
 variant handles it. Binary variants are already selected by their
 `frameByteHint` and do not need a `matches` closure.
 
+> **Required for all text variants.** A text variant without a `matches {}` block
+> will never handle any message — `VariantDefinition.matches()` returns `false`
+> when no closure is configured, so the variant is permanently skipped during
+> message dispatch.
+
 ```groovy
 matches { msg -> msg.startsWith("*HQ,") }
 matches { msg -> msg.startsWith("#") && msg.contains("#MT") }
@@ -422,6 +427,8 @@ decode { msg, ctx ->
     pos.set(Position.KEY_IGNITION, true)
     pos.set(Position.KEY_SATELLITES, 8)
     pos.addAlarm(ALARM_SOS)             // add an active alarm
+    // NOTE: pos.alarm = ALARM_X does NOT work — Position has no setAlarm(String).
+    //       Always use pos.addAlarm().
 
     // No GPS fix — copy last known position
     ctx.lastLocation(pos)               // sets lat/lon from history
@@ -986,6 +993,58 @@ Three message types on one port; demonstrates per-device password lookup:
 - Event-driven alarm acknowledgement with `ctx.ack()`
 - `ctx.deviceAttrs(session).password('00000000')` — per-device password in decode
 - `ctx.devicePassword('00000000')` — per-device password in encode
+
+---
+
+## Groovy pitfalls
+
+### Slashy strings and `$` interpolation
+
+Groovy slashy strings (`/.../`) interpolate `$identifier` sequences. If your
+regex contains a literal `$` (e.g. to match `$GPRMC` or `$GPRS`), the `$` will
+be treated as a GString variable reference and throw `MissingPropertyException`
+at script load time.
+
+```groovy
+// WRONG — $GPRS is interpolated, throws MissingPropertyException at load time
+def PATTERN = Pattern.compile(/^\$GPRS(\d+),.../)
+
+// CORRECT — use a dollar-slashy string: $$ is a literal $
+def PATTERN = Pattern.compile($/^\$$GPRS(\d+),.../$ )
+
+// Also correct — single-quoted string with \\-escaped regex metacharacters
+def PATTERN = Pattern.compile('^\\$GPRS(\\d+),...')
+```
+
+### Groovy GDK extension methods
+
+Some Groovy GDK extension methods on Java standard library classes may not be
+available in the server JVM context. A known unavailable method is
+`Date.format(String, TimeZone)`. Use the equivalent Java API instead:
+
+```groovy
+// WRONG — Date.format(String, TimeZone) is a GDK method that may not be available
+def t = new Date().format('HHmmss', TimeZone.getTimeZone('UTC'))
+
+// CORRECT — use SimpleDateFormat explicitly
+def sdf = new java.text.SimpleDateFormat('HHmmss')
+sdf.setTimeZone(TimeZone.getTimeZone('UTC'))
+def t = sdf.format(new Date())
+```
+
+### Alarm API
+
+`Position` has no `setAlarm(String)` method. Assigning `pos.alarm = ALARM_X`
+does not set the alarm and may store a coerced boolean in the attributes map.
+Always use `addAlarm`:
+
+```groovy
+// WRONG — Position has no setAlarm(); produces unexpected behavior
+pos.alarm = ALARM_POWER_CUT
+
+// CORRECT
+pos.addAlarm(ALARM_POWER_CUT)
+```
 
 ---
 

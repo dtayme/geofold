@@ -88,6 +88,33 @@ rather than an exact driver-name match:
 | `mictrack` | `external/mictrack/` | Vendor documents are present; command declarations still need migration. |
 | `topflyftech` | `traccar-protocols/topflytech/`, `traccar-protocols/t800x/` | Archived decoder parity looks consistent; command support should be revisited if the family docs include outbound commands. |
 
+### Resolved: Missing `matches {}` Blocks (2026-06-13)
+
+Seven text-protocol drivers were missing `matches {}` closures. Without a
+`matches` closure, `VariantDefinition.matches()` always returns `false` and the
+variant never handles any real message. Fixed by adding appropriate prefix-check
+closures to each driver:
+
+| Driver | Added `matches` predicate |
+| --- | --- |
+| `topflyftech` | `msg.startsWith("(")` |
+| `trackbox` | `msg.startsWith("a=connect") \|\| Character.isDigit(msg.charAt(0))` |
+| `box` | `msg.startsWith("H,") \|\| msg.startsWith("E,") \|\| msg.startsWith("L,")` |
+| `tr20` | `msg.startsWith("%%")` |
+| `ywt` | `msg.startsWith("%") && !msg.startsWith("%%") && !msg.contains('$GPRMC')` |
+| `pt3000` | `msg.startsWith("%") && msg.contains('$GPRMC')` |
+| `nto` | `msg.startsWith("^NB,")` |
+
+### Resolved: Driver Script Bugs (2026-06-13)
+
+Three driver-level bugs were found and fixed while writing test fixtures:
+
+| Driver | Bug | Fix |
+| --- | --- | --- |
+| `haicom` | `$GPRS` in a slashy-string regex was GString-interpolated, throwing `MissingPropertyException: No such property: GPRS` at load time. | Changed to a dollar-slashy string (`$/^\$$GPRS.../$`) so `$$` produces a literal `$`. |
+| `mictrack` | `new Date().format('HHmmss', TimeZone.getTimeZone('UTC'))` used the Groovy GDK `Date.format(String, TimeZone)` extension, which is unavailable in this JVM context. | Replaced with an explicit `SimpleDateFormat` instance. |
+| `nto` | Alarm bits were set via `pos.alarm = ALARM_X`. `Position` has no `setAlarm(String)`; Groovy's type coercion falls through and stores a Boolean instead of the alarm string. | Changed all eight alarm-bit assignments to `pos.addAlarm(ALARM_X)`. |
+
 ### Resolved: Test Coverage Gaps
 
 The migrated driver tests now cover the previously identified high-priority
@@ -100,6 +127,9 @@ feature-completeness checks:
 - `mictrack`, `laipac`, and `pretrace` command declaration visibility.
 - H02 text position, blind-spot batch, heartbeat ACK, binary standard frame,
   and command declaration coverage.
+- `DriverMessageAdapter` BufReader retain/release lifecycle (4 unit tests).
+- Decode-path fixtures for `tk102` (binary), `topflyftech`, `trackbox`, `box`,
+  `tr20`, `ywt`, `haicom`, `pt3000`, `nto`, and `mictrack` HQ variant.
 
 Additional fixture work should use examples extracted from exact vendor/source
 documents as those documents become machine-readable.
