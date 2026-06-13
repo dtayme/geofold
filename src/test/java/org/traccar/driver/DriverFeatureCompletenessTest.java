@@ -11,6 +11,7 @@ import org.traccar.helper.Checksum;
 import org.traccar.model.Command;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -69,6 +70,12 @@ public class DriverFeatureCompletenessTest {
                 Command.TYPE_CUSTOM,
                 Command.TYPE_ENGINE_STOP,
                 Command.TYPE_ENGINE_RESUME), loadDriver("enfora").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_POSITION_SINGLE,
+                Command.TYPE_POSITION_PERIODIC,
+                Command.TYPE_POSITION_STOP,
+                Command.TYPE_SET_TIMEZONE), loadDriver("cityeasy").getSupportedCommands());
 
         assertEquals(Set.of(
                 Command.TYPE_CUSTOM,
@@ -176,6 +183,23 @@ public class DriverFeatureCompletenessTest {
                 0x41, 0x54, 0x2b, 0x54, 0x45, 0x53, 0x54, 0x3f},
                 (byte[]) variant(enfora, "main").getEncodeClosure().call(
                         commandWithData(Command.TYPE_CUSTOM, "AT+TEST?"), new FakeEncodeContext("AT+TEST?")));
+
+        DriverDefinition cityeasy = loadDriver("cityeasy");
+        assertArrayEquals(cityeasyFrame(0x0004, new byte[0]),
+                (byte[]) variant(cityeasy, "main").getEncodeClosure().call(
+                        command(Command.TYPE_POSITION_SINGLE), ctx));
+        assertArrayEquals(cityeasyFrame(0x0005, new byte[] {0x00, 0x3c}),
+                (byte[]) variant(cityeasy, "main").getEncodeClosure().call(
+                        command(Command.TYPE_POSITION_PERIODIC), ctx));
+        assertArrayEquals(cityeasyFrame(0x0005, new byte[] {0x00, 0x00}),
+                (byte[]) variant(cityeasy, "main").getEncodeClosure().call(
+                        command(Command.TYPE_POSITION_STOP), ctx));
+        assertArrayEquals(cityeasyFrame(0x0008, new byte[] {0x00, 0x00, 0x00}),
+                (byte[]) variant(cityeasy, "main").getEncodeClosure().call(
+                        commandWithTimezone("GMT"), ctx));
+        assertArrayEquals(cityeasyFrame(0x0008, new byte[] {0x00, 0x01, 0x68}),
+                (byte[]) variant(cityeasy, "main").getEncodeClosure().call(
+                        commandWithTimezone("GMT+6"), ctx));
     }
 
     @Test
@@ -232,6 +256,20 @@ public class DriverFeatureCompletenessTest {
         assertEquals(5070, orion.getDefaultPort());
         assertEquals((byte) 0x50, orionUserlog.getFrameByteHint());
         assertEquals(FrameSpec.Mode.READ_SCRIPTED, orionUserlog.getFrameSpec().getMode());
+
+        DriverDefinition ramac = loadDriver("ramac");
+        assertEquals(5251, ramac.getDefaultPort());
+        assertEquals(Set.of(DriverTransport.HTTP), ramac.getTransports());
+        assertEquals("json", variant(ramac, "json").getName());
+
+        DriverDefinition cityeasy = loadDriver("cityeasy");
+        VariantDefinition cityeasyMain = variant(cityeasy, "main");
+        assertEquals(5088, cityeasy.getDefaultPort());
+        assertEquals((byte) 0x54, cityeasyMain.getFrameByteHint());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, cityeasyMain.getFrameSpec().getMode());
+        assertEquals(2, cityeasyMain.getFrameSpec().getLengthFieldOffset());
+        assertEquals(2, cityeasyMain.getFrameSpec().getLengthFieldLength());
+        assertEquals(-4, cityeasyMain.getFrameSpec().getLengthAdjustment());
     }
 
     @Test
@@ -255,6 +293,36 @@ public class DriverFeatureCompletenessTest {
         command.set(Command.KEY_SERVER, server);
         command.set(Command.KEY_PORT, port);
         return command;
+    }
+
+    private Command commandWithTimezone(String timezone) {
+        Command command = command(Command.TYPE_SET_TIMEZONE);
+        command.set(Command.KEY_TIMEZONE, timezone);
+        return command;
+    }
+
+    private byte[] cityeasyFrame(int type, byte[] content) {
+        byte[] result = new byte[14 + content.length];
+        int index = 0;
+        result[index++] = 'S';
+        result[index++] = 'S';
+        int length = result.length;
+        result[index++] = (byte) (length >> 8);
+        result[index++] = (byte) length;
+        result[index++] = (byte) (type >> 8);
+        result[index++] = (byte) type;
+        System.arraycopy(content, 0, result, index, content.length);
+        index += content.length;
+        result[index++] = 0;
+        result[index++] = 0;
+        result[index++] = 0;
+        result[index++] = 0x0b;
+        int crc = Checksum.crc16(Checksum.CRC16_KERMIT, ByteBuffer.wrap(result, 0, index));
+        result[index++] = (byte) (crc >> 8);
+        result[index++] = (byte) crc;
+        result[index++] = '\r';
+        result[index] = '\n';
+        return result;
     }
 
     public static class FakeEncodeContext {

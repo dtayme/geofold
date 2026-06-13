@@ -27,7 +27,6 @@ import org.traccar.protocol.AutoFonProtocol;
 import org.traccar.protocol.BceProtocol;
 import org.traccar.protocol.CastelProtocol;
 import org.traccar.protocol.CellocatorProtocol;
-import org.traccar.protocol.CityeasyProtocol;
 import org.traccar.protocol.EasyTrackProtocol;
 import org.traccar.protocol.EelinkProtocol;
 import org.traccar.protocol.FifotrackProtocol;
@@ -58,7 +57,6 @@ import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.NoranProtocol;
 import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.protocol.ProgressProtocol;
-import org.traccar.protocol.RamacProtocol;
 import org.traccar.protocol.RuptelaProtocol;
 import org.traccar.protocol.SkypatrolProtocol;
 import org.traccar.protocol.StartekProtocol;
@@ -143,7 +141,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(XirgoProtocol.class, 5081);
         put(CastelProtocol.class, 5086);
         put(MxtProtocol.class, 5087);
-        put(CityeasyProtocol.class, 5088);
         put(AdmProtocol.class, 5092);
         put(WatchProtocol.class, 5093);
         put(T800xProtocol.class, 5094);
@@ -157,7 +154,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(ThinkPowerProtocol.class, 5228);
         put(Xexun2Protocol.class, 5233);
         put(T622IridiumProtocol.class, 5248);
-        put(RamacProtocol.class, 5251);
         put(JmakProtocol.class, 5259);
     }
 

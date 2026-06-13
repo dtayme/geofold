@@ -9,6 +9,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpMethod;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.junit.jupiter.api.Test;
 import org.traccar.NetworkMessage;
@@ -44,6 +46,22 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
         when(protocol.getName()).thenReturn(name);
 
         return inject(new TestDriverProtocolDecoder(protocol, registry, definition));
+    }
+
+    private TestDriverHttpProtocolDecoder httpDecoder(String name) throws Exception {
+        DriverDefinition definition = loadDriver(name);
+
+        DriverRegistry registry = mock(DriverRegistry.class);
+        when(registry.match(any(), any(), any())).thenAnswer(invocation -> {
+            Object message = invocation.getArgument(0);
+            VariantDefinition variant = definition.matchVariant(message);
+            return variant != null ? new DriverRegistry.DriverMatch(definition, variant) : null;
+        });
+
+        Protocol protocol = mock(Protocol.class);
+        when(protocol.getName()).thenReturn(name);
+
+        return inject(new TestDriverHttpProtocolDecoder(protocol, registry));
     }
 
     private DriverDefinition loadDriver(String name) throws Exception {
@@ -278,6 +296,53 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
     }
 
     @Test
+    public void testRamacDecode() throws Exception {
+        var decoder = httpDecoder("ramac");
+
+        verifyAttributes(decoder, request(HttpMethod.POST, "/",
+                buffer("{\"PacketType\": 0,\"SeqNumber\": 4,\"UpdateDate\": \"2022-05-06 12:25:35\",\"Alert\": 42,\"AlertMessage\": \"Low Battery\",\"Mode\": 1,\"ModeText\": \"Help Me\",\"SigfoxTXInterval\": 2,\"GpsFixInterval\": 3,\"SigfoxTXIntervalText\": \"2 Seconds\",\"GpsFixIntervalText\": \"3 Seconds\",\"BatteryPercentage\": 4,\"Battery\": 0.1,\"Temperature\": -22,\"HwVersion\": 7,\"FirmwareVersion\": 8,\"DeviceId\": \"A10001\",\"DeviceType\": \"12\",\"DeviceTypeText\": \"RAMAC P1\"}")));
+
+        verifyPosition(decoder, request(HttpMethod.POST, "/",
+                buffer("{\"PacketType\": 1,\"SeqNumber\": 4,\"UpdateDate\": \"2022-05-06 12:25:35\",\"Alert\": 0,\"AlertMessage\": \"\",\"Latitude\": -25.87586735939189,\"Longitude\": 28.179579268668846,\"Speed\": 1,\"COG\": 3,\"EstimatedAccuracy\": 3,\"LastLocation\": 0,\"LastLocationText\": \"NEW LOCATION\",\"IsMoving\": 0,\"IsMovingText\": \"STATIONARY\",\"GpsEvent\": 5,\"GpsEventText\": \"Heartbeat\",\"DeviceId\": \"A10001\",\"DeviceType\": \"12\",\"DeviceTypeText\": \"RAMAC P1\"}")));
+
+        EmbeddedChannel channel = new EmbeddedChannel();
+        Object result = decoder.decode(channel, null, request(HttpMethod.POST, "/",
+                buffer("{\"PacketType\": 2,\"SeqNumber\": 4,\"UpdateDate\": \"2022-05-06 12:25:35\",\"Alert\": 19,\"AlertMessage\": \"P1 Panic\",\"Event\": 16,\"DeviceId\": \"A10001\",\"DeviceType\": \"12\",\"DeviceTypeText\": \"RAMAC P1\",\"Latitude\": -25.875867359392,\"Longitude\": 28.179579268669,\"LocationDateTime\": \"2022-05-05 08:48:11\"}")));
+        assertInstanceOf(Position.class, result);
+        assertHttpResponse(channel, 200, "{\"CaseID\":1,\"EventID\":1}");
+    }
+
+    @Test
+    public void testCityeasyDecode() throws Exception {
+        var decoder = decoder("cityeasy");
+
+        verifyNotNull(decoder, binary(
+                "545400853575570249020100033b3430342c34352c31303638312c31313632312c33352c31303638312c31313632322c32332c31303638312c32383938332c32332c31303638312c31313632332c32312c31303638312c32333338312c31372c31303638312c32323538332c31372c31303638312c32363434312c31330000000d352e0d0a"));
+
+        verifyNull(decoder, binary(
+                "54540019357557024902010002520704100000000bbe700d0a"));
+
+        verifyNull(decoder, binary(
+                "5454001735755702490201434a01000000000c24280d0a"));
+
+        verifyNull(decoder, binary(
+                "545400153520000000000100010000000111000D0A"));
+
+        verifyNull(decoder, binary(
+                "54540019357557024902000002520704300000000376390d0a"));
+
+        verifyPosition(decoder, binary(
+                "5454006135200000000001000332303134313131303039353430392C412C342C4E2C32322E3533373232382C452C3131342E3032323737342C302E312C312E392C35302E363B3436302C302C31303137332C343635322C34310000000B63130D0A"),
+                position("2014-11-10 09:54:09.000", true, 22.53723, 114.02277));
+
+        verifyPosition(decoder, binary(
+                "5454006135200000000001000432303134313131303039353330362C412C352C4E2C32322E3533373233352C452C3131342E3032323838312C302E322C312E362C35342E313B3436302C302C31303137332C343635322C343100000045EC620D0A"));
+
+        verifyPosition(decoder, binary(
+                "5454009035755702490200000332303135303732393033303834352c412c362c4e2c31322e3833353735362c452c37372e3638373039362c302e332c312e322c3931302e303b3430342c34352c31303638312c31313632312c34332c31303638312c31313632332c32312c31303638312c32323538332c32302c31303638312c32333338312c31380000000267370d0a"));
+    }
+
+    @Test
     public void testLaipacDecode() throws Exception {
         var decoder = decoder("laipac");
 
@@ -401,6 +466,14 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
         responseBuffer.release();
     }
 
+    private void assertHttpResponse(EmbeddedChannel channel, int expectedStatus, String expectedBody) {
+        NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
+        FullHttpResponse httpResponse = assertInstanceOf(FullHttpResponse.class, response.getMessage());
+        assertEquals(expectedStatus, httpResponse.status().code());
+        assertEquals(expectedBody, httpResponse.content().toString(java.nio.charset.StandardCharsets.UTF_8));
+        httpResponse.release();
+    }
+
     private static class TestDriverProtocolDecoder extends DriverProtocolDecoder {
 
         private final DriverDefinition definition;
@@ -419,6 +492,23 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 return super.decode(binaryChannel, remoteAddress, new BufReader(buf));
             }
             return super.decode(channel, remoteAddress, msg);
+        }
+
+        @Override
+        DeviceSession session(Channel channel, SocketAddress remoteAddress, String uniqueId) {
+            return new DeviceSession(1, uniqueId, null, mock(Protocol.class), mock(Channel.class), remoteAddress);
+        }
+
+        @Override
+        DeviceSession session(Channel channel, SocketAddress remoteAddress) {
+            return new DeviceSession(1, "", null, mock(Protocol.class), mock(Channel.class), remoteAddress);
+        }
+    }
+
+    private static class TestDriverHttpProtocolDecoder extends DriverHttpProtocolDecoder {
+
+        TestDriverHttpProtocolDecoder(Protocol protocol, DriverRegistry registry) {
+            super(protocol, registry);
         }
 
         @Override

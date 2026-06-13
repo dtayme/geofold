@@ -30,9 +30,9 @@ requires a protocol-by-protocol source review.
 - Undocumented Java protocol implementations archived from the active source
   tree: 140
 - Active documented, official, or alias-documented Java protocol
-  implementations remaining in `src/main/java/org/traccar/protocol/`: 63
+  implementations remaining in `src/main/java/org/traccar/protocol/`: 61
 - Documented Java protocol implementations migrated to Groovy after this audit:
-  5
+  7
 
 ## Method
 
@@ -78,9 +78,11 @@ table:
 | Protocol | Documentation | Notes |
 | --- | --- | --- |
 | `cartrack` | `docs/driver-source-docs/traccar-protocols/cartrack/` | Migrated to `drivers/cartrack.groovy`; Java implementation and protocol test archived under `archived-protocols/cartrack/`. |
+| `cityeasy` | `docs/driver-source-docs/traccar-protocols/cityeasy/` | Migrated to `drivers/cityeasy.groovy`; Java implementation, encoder, and protocol test archived under `archived-protocols/cityeasy/`. |
 | `enfora` | `docs/driver-source-docs/traccar-protocols/enfora/` | Migrated to `drivers/enfora.groovy`; Java implementation, encoder, and protocol test archived under `archived-protocols/enfora/`. |
 | `m2m` | `docs/driver-source-docs/traccar-protocols/m2m/` | Migrated to `drivers/m2m.groovy`; Java implementation and protocol test archived under `archived-protocols/m2m/`. |
 | `orion` | `docs/driver-source-docs/traccar-protocols/orion/` | Migrated to `drivers/orion.groovy`; Java implementation, frame decoder, and protocol test archived under `archived-protocols/orion/`. |
+| `ramac` | `docs/driver-source-docs/traccar-protocols/ramac/` | Migrated to `drivers/ramac.groovy`; Java implementation and protocol test archived under `archived-protocols/ramac/`. |
 | `riti` | `docs/driver-source-docs/traccar-protocols/riti/` | Migrated to `drivers/riti.groovy`; Java implementation and protocol test archived under `archived-protocols/riti/`. |
 
 ## No Exact Public Traccar Archive Match
