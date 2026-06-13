@@ -21,11 +21,12 @@ documentation, with archived Java parity used only as supporting evidence.
 | `orion` | Migrated to `drivers/orion.groovy`, backed by the downloaded Orion binary protocol PDF, scripted-frame driver tests, ACK coverage, and Java-parity position fixtures. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/orion/`. |
 | `ramac` | Migrated to `drivers/ramac.groovy`, backed by the downloaded Ramac callback PDF, HTTP driver decode tests, and JSON acknowledgement coverage. Java source and old Java protocol test moved to `archived-protocols/ramac/`. |
 | `riti` | Migrated to `drivers/riti.groovy`, backed by the downloaded Riti Air Communication Protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/riti/`. |
+| `stl060` | Migrated to `drivers/stl060.groovy`, backed by the downloaded STL060 protocol document and Java-parity driver decode tests. Java source, frame decoder, and old Java protocol test moved to `archived-protocols/stl060/`. |
 | `v680` | Migrated to `drivers/v680.groovy`, backed by the downloaded V680 GPRS protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/v680/`. |
 
 ## Remaining Active Java Protocols
 
-60 documented, official, or alias-documented Java protocol implementations
+59 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the

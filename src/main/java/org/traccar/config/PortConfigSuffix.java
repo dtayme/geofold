@@ -60,7 +60,6 @@ import org.traccar.protocol.ProgressProtocol;
 import org.traccar.protocol.RuptelaProtocol;
 import org.traccar.protocol.SkypatrolProtocol;
 import org.traccar.protocol.StartekProtocol;
-import org.traccar.protocol.Stl060Protocol;
 import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.T622IridiumProtocol;
@@ -129,7 +128,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(OsmAndProtocol.class, 5055);
         put(EasyTrackProtocol.class, 5056);
         put(KhdProtocol.class, 5058);
-        put(Stl060Protocol.class, 5060);
         put(MiniFinderProtocol.class, 5062);
         put(EelinkProtocol.class, 5064);
         put(UlbotechProtocol.class, 5072);

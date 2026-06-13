@@ -277,6 +277,12 @@ public class DriverFeatureCompletenessTest {
         assertEquals(Set.of(DriverTransport.TCP, DriverTransport.UDP), v680.getTransports());
         assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, v680Main.getFrameSpec().getMode());
         assertArrayEquals(new byte[] {'#', '#'}, v680Main.getFrameSpec().getTerminator());
+
+        DriverDefinition stl060 = loadDriver("stl060");
+        VariantDefinition stl060Main = variant(stl060, "main");
+        assertEquals(5060, stl060.getDefaultPort());
+        assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, stl060Main.getFrameSpec().getMode());
+        assertArrayEquals(new byte[] {'#'}, stl060Main.getFrameSpec().getTerminator());
     }
 
     @Test

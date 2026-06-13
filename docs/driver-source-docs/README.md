@@ -22,13 +22,13 @@ fictional sample protocol.
 
 ## Download Summary
 
-- Groovy production drivers checked during research and migration: 70
+- Groovy production drivers checked during research and migration: 71
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 33
+  `drivers/`: 34
 - Undocumented Groovy drivers moved to
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files: 51
-- Drivers with exact public documentation match: 29
+- Downloaded documentation files: 52
+- Drivers with exact public documentation match: 30
 - Drivers covered by alias/vendor-family documentation: 4
 - Drivers without a public downloadable protocol document found in this pass: 37
 
@@ -60,6 +60,7 @@ fictional sample protocol.
 | `ramac` | Exact Traccar archive match | `traccar-protocols/ramac/` |
 | `r16h` | Exact Traccar archive match | `traccar-protocols/r16h/` |
 | `riti` | Exact Traccar archive match | `traccar-protocols/riti/` |
+| `stl060` | Exact Traccar archive match | `traccar-protocols/stl060/` |
 | `tk102` | Exact Traccar archive match | `traccar-protocols/tk102/` |
 | `tlt2h` | Exact Traccar archive match | `traccar-protocols/tlt2h/` |
 | `topflyftech` | Alias: Topflytech/T800X docs | `traccar-protocols/topflytech/`, `traccar-protocols/t800x/` |

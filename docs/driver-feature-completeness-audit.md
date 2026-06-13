@@ -19,13 +19,13 @@ the available protocol documentation.
 
 ## Scope
 
-- Production Groovy drivers checked during research and migration: 70
+- Production Groovy drivers checked during research and migration: 71
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 33
+  `drivers/`: 34
 - Undocumented Groovy drivers archived under
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files available locally: 51
-- Drivers with exact downloaded protocol documentation: 29
+- Downloaded documentation files available locally: 52
+- Drivers with exact downloaded protocol documentation: 30
 - Drivers covered by alias or vendor-family documentation: 4
 - Drivers without downloaded public documentation in this pass: 37
 
@@ -132,6 +132,7 @@ documents as those documents become machine-readable.
 | `ramac` | Exact Traccar archive match | Migrated from Java; HTTP JSON callback matching, status/GPS/alert payload fields, last-location fallback, and documented JSON acknowledgement are covered by Java-parity fixtures. |
 | `r16h` | Exact Traccar archive match | Decode, delimiter, and alarm handling appear aligned with archived Java. |
 | `riti` | Exact Traccar archive match | Migrated from Java; binary little-endian length-field framing, GPRMC decode, power, command, distance, and trip odometer fields are covered by Java-parity fixtures. |
+| `stl060` | Exact Traccar archive match | Migrated from Java; `#`-delimited D001 records, preamble-tolerant matching, old and new tail layouts, coordinates, inputs, outputs, odometer, fuel, RFID, temperature, charge, acceleration, and validity are covered by Java-parity fixtures. |
 | `tk102` | Exact Traccar archive match | Decode, login, heartbeat ACK, and length-field framing appear aligned with archived Java. |
 | `tlt2h` | Exact Traccar archive match | Large `##`-terminated messages, GPS, Wi-Fi, batch handling, and alarms appear aligned with archived Java. |
 | `topflyftech` | Alias: Topflytech/T800X docs | Decode framing appears aligned with archived Java; outbound command coverage needs doc review. |
