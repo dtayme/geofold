@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DriverFeatureCompletenessTest {
 
@@ -120,6 +121,29 @@ public class DriverFeatureCompletenessTest {
                 Command.TYPE_ENGINE_RESUME), loadDriver("noran").getSupportedCommands());
 
         assertEquals(Set.of(Command.TYPE_CUSTOM), loadDriver("t800x").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_ENGINE_RESUME,
+                Command.TYPE_ENGINE_STOP,
+                Command.TYPE_POSITION_SINGLE,
+                Command.TYPE_REBOOT_DEVICE), loadDriver("mobilogix").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_GET_DEVICE_STATUS), loadDriver("adm").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_POSITION_SINGLE,
+                Command.TYPE_ENGINE_RESUME,
+                Command.TYPE_ENGINE_STOP,
+                Command.TYPE_SET_SPEED_LIMIT,
+                Command.TYPE_SET_ODOMETER), loadDriver("gator").getSupportedCommands());
+
+        assertEquals(Set.of(
+                Command.TYPE_CUSTOM,
+                Command.TYPE_ALARM_DISMISS,
+                Command.TYPE_OUTPUT_CONTROL), loadDriver("globalsat").getSupportedCommands());
     }
 
     @Test
@@ -226,6 +250,20 @@ public class DriverFeatureCompletenessTest {
                 (byte[]) variant(t800x, "h2323").getEncodeClosure().call(
                         commandWithData(Command.TYPE_CUSTOM, "RELAY,0000,On#"),
                         new FakeEncodeContext("RELAY,0000,On#")));
+
+        DriverDefinition mobilogix = loadDriver("mobilogix");
+        assertTrue(String.valueOf(variant(mobilogix, "main").getEncodeClosure().call(
+                command(Command.TYPE_ENGINE_STOP), ctx)).endsWith(",S6,RELAY=1]"));
+
+        DriverDefinition adm = loadDriver("adm");
+        assertEquals("STATUS\r\n", variant(adm, "main").getEncodeClosure().call(
+                command(Command.TYPE_GET_DEVICE_STATUS), ctx));
+        assertEquals("PING\r\n", String.valueOf(variant(adm, "main").getEncodeClosure().call(
+                commandWithData(Command.TYPE_CUSTOM, "PING"), new FakeEncodeContext("PING"))));
+
+        DriverDefinition globalsat = loadDriver("globalsat");
+        assertEquals("GSC,123456789012345,Na*48!", variant(globalsat, "main").getEncodeClosure().call(
+                command(Command.TYPE_ALARM_DISMISS), ctx));
     }
 
     @Test
@@ -258,6 +296,25 @@ public class DriverFeatureCompletenessTest {
         assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, ritiMain.getFrameSpec().getMode());
         assertEquals(105, ritiMain.getFrameSpec().getLengthFieldOffset());
         assertEquals(2, ritiMain.getFrameSpec().getLengthFieldLength());
+
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(loadDriver("t622iridium"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(loadDriver("progress"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_FIXED, variant(loadDriver("intellitrac"), "sync")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, variant(loadDriver("mobilogix"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_SCRIPTED, variant(loadDriver("autofon"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_SCRIPTED, variant(loadDriver("adm"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_LENGTH_FIELD, variant(loadDriver("gator"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, variant(loadDriver("globalsat"), "main")
+                .getFrameSpec().getMode());
+        assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, variant(loadDriver("taip"), "main")
+                .getFrameSpec().getMode());
         assertEquals(3, ritiMain.getFrameSpec().getLengthAdjustment());
         assertEquals(true, ritiMain.getFrameSpec().isLengthFieldLittleEndian());
 
