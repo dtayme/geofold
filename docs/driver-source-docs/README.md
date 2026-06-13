@@ -22,13 +22,13 @@ fictional sample protocol.
 
 ## Download Summary
 
-- Groovy production drivers checked during research and migration: 69
+- Groovy production drivers checked during research and migration: 70
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 32
+  `drivers/`: 33
 - Undocumented Groovy drivers moved to
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files: 50
-- Drivers with exact public documentation match: 28
+- Downloaded documentation files: 51
+- Drivers with exact public documentation match: 29
 - Drivers covered by alias/vendor-family documentation: 4
 - Drivers without a public downloadable protocol document found in this pass: 37
 
@@ -66,6 +66,7 @@ fictional sample protocol.
 | `tr20` | Exact Traccar archive match | `traccar-protocols/tr20/` |
 | `tr900` | Exact Traccar archive match | `traccar-protocols/tr900/` |
 | `trackbox` | Exact Traccar archive match | `traccar-protocols/trackbox/` |
+| `v680` | Exact Traccar archive match | `traccar-protocols/v680/` |
 | `wondex` | Exact Traccar archive match | `traccar-protocols/wondex/` |
 | `ywt` | Exact Traccar archive match | `traccar-protocols/ywt/` |
 

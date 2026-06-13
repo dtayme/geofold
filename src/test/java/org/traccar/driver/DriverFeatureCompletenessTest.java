@@ -270,6 +270,13 @@ public class DriverFeatureCompletenessTest {
         assertEquals(2, cityeasyMain.getFrameSpec().getLengthFieldOffset());
         assertEquals(2, cityeasyMain.getFrameSpec().getLengthFieldLength());
         assertEquals(-4, cityeasyMain.getFrameSpec().getLengthAdjustment());
+
+        DriverDefinition v680 = loadDriver("v680");
+        VariantDefinition v680Main = variant(v680, "main");
+        assertEquals(5016, v680.getDefaultPort());
+        assertEquals(Set.of(DriverTransport.TCP, DriverTransport.UDP), v680.getTransports());
+        assertEquals(FrameSpec.Mode.READ_UNTIL_BYTES, v680Main.getFrameSpec().getMode());
+        assertArrayEquals(new byte[] {'#', '#'}, v680Main.getFrameSpec().getTerminator());
     }
 
     @Test

@@ -19,13 +19,13 @@ the available protocol documentation.
 
 ## Scope
 
-- Production Groovy drivers checked during research and migration: 69
+- Production Groovy drivers checked during research and migration: 70
 - Active documented or alias-documented production drivers retained under
-  `drivers/`: 32
+  `drivers/`: 33
 - Undocumented Groovy drivers archived under
   `archived-protocols/undocumented/<name>/<name>.groovy`: 37
-- Downloaded documentation files available locally: 50
-- Drivers with exact downloaded protocol documentation: 28
+- Downloaded documentation files available locally: 51
+- Drivers with exact downloaded protocol documentation: 29
 - Drivers covered by alias or vendor-family documentation: 4
 - Drivers without downloaded public documentation in this pass: 37
 
@@ -138,6 +138,7 @@ documents as those documents become machine-readable.
 | `tr20` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
 | `tr900` | Exact Traccar archive match | Decode behavior appears aligned with archived Java. |
 | `trackbox` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
+| `v680` | Exact Traccar archive match | Migrated from Java; `##`-terminated TCP framing, UDP packet decode, login/session registration, optional report identifiers, coordinate conversion, and invalid-date rejection are covered by Java-parity fixtures. |
 | `wondex` | Exact Traccar archive match | Decode, keepalive echo, and archived command support are migrated and covered by fixtures. |
 | `ywt` | Exact Traccar archive match | Decode and ACK behavior appear aligned with archived Java. |
 

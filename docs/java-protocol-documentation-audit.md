@@ -30,9 +30,9 @@ requires a protocol-by-protocol source review.
 - Undocumented Java protocol implementations archived from the active source
   tree: 140
 - Active documented, official, or alias-documented Java protocol
-  implementations remaining in `src/main/java/org/traccar/protocol/`: 61
+  implementations remaining in `src/main/java/org/traccar/protocol/`: 60
 - Documented Java protocol implementations migrated to Groovy after this audit:
-  7
+  8
 
 ## Method
 
@@ -84,6 +84,7 @@ table:
 | `orion` | `docs/driver-source-docs/traccar-protocols/orion/` | Migrated to `drivers/orion.groovy`; Java implementation, frame decoder, and protocol test archived under `archived-protocols/orion/`. |
 | `ramac` | `docs/driver-source-docs/traccar-protocols/ramac/` | Migrated to `drivers/ramac.groovy`; Java implementation and protocol test archived under `archived-protocols/ramac/`. |
 | `riti` | `docs/driver-source-docs/traccar-protocols/riti/` | Migrated to `drivers/riti.groovy`; Java implementation and protocol test archived under `archived-protocols/riti/`. |
+| `v680` | `docs/driver-source-docs/traccar-protocols/v680/` | Migrated to `drivers/v680.groovy`; Java implementation and protocol test archived under `archived-protocols/v680/`. |
 
 ## No Exact Public Traccar Archive Match
 

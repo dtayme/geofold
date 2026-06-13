@@ -74,7 +74,6 @@ import org.traccar.protocol.TotemProtocol;
 import org.traccar.protocol.TramigoProtocol;
 import org.traccar.protocol.TzoneProtocol;
 import org.traccar.protocol.UlbotechProtocol;
-import org.traccar.protocol.V680Protocol;
 import org.traccar.protocol.WatchProtocol;
 import org.traccar.protocol.WialonProtocol;
 import org.traccar.protocol.Xexun2Protocol;
@@ -105,7 +104,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(ProgressProtocol.class, 5012);
         put(Jt600Protocol.class, 5014);
         put(Jt808Protocol.class, 5015);
-        put(V680Protocol.class, 5016);
         put(NavisProtocol.class, 5019);
         put(MeitrackProtocol.class, 5020);
         put(SkypatrolProtocol.class, 5021);
