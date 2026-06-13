@@ -88,6 +88,9 @@ protocol("webhook") {
 }
 ```
 
+Single-transport shorthands `tcp()`, `udp()`, and `http()` are equivalent to
+`transport 'tcp'` etc. and can be used interchangeably.
+
 Hot reload updates drivers served by already-open listeners. Adding a new port
 or changing a driver's transport requires a server restart so the OS socket can
 be opened or closed.
@@ -125,6 +128,12 @@ frame readLine()
 frame '*' as char, readUntil('#')   // first byte '*' → read until '#'
 frame '#' as char, readUntil('##')  // first byte '#' → read until '##'
 ```
+
+After the terminator is consumed, the frame decoder silently skips any
+immediately-following `\r` and `\n` bytes. This handles devices that append
+a line-ending after their terminator (e.g. `*HQ,...#\r\n`) without requiring
+separate framing. Messages passed to `matches` and `decode` are also
+whitespace-trimmed before dispatch.
 
 ### Binary framing
 
@@ -583,8 +592,9 @@ of a `String`.
 | `buf.getUInt(index)` / `buf.getUIntLE(index)` | `long` | Peek four bytes without advancing |
 | `buf.getBytes(index, n)` | `byte[]` | Peek raw bytes without advancing |
 | `buf.readableBytes()` | `int` | Bytes remaining |
+| `buf.remaining()` | `int` | Alias for `readableBytes()` |
 | `buf.isReadable()` | `boolean` | `true` if any bytes remain |
-| `BufReader.checkBit(v, bit)` | `boolean` | `true` if bit `bit` is set in `v` (bit 0 = LSB) |
+| `checkBit(v, bit)` | `boolean` | `true` if bit `bit` is set in `v` (bit 0 = LSB). Available as a bare call — no `BufReader.` prefix needed. |
 
 ### FrameBuffer API
 
@@ -628,6 +638,9 @@ byte[] packet = bytes {
 `writeIntLE`, `writeBytes`, `writeHex`, `writeBcd`, `writeZero`,
 `writeString`, `setByte`, `setShort`, `setShortLE`, `setInt`, `setIntLE`,
 `size`, and `toByteArray`.
+
+`writeBcd(digits)` pads to an even byte count using nibble `0xf`. Use
+`writeBcd(digits, 0x00)` when the protocol pads with `0x0` instead.
 
 Checksum helpers available in every driver script:
 
@@ -766,32 +779,43 @@ All `ALARM_*` constants are available without imports:
 
 | Constant | String value |
 |---|---|
+| `ALARM_GENERAL` | `"general"` |
 | `ALARM_SOS` | `"sos"` |
 | `ALARM_TOW` | `"tow"` |
 | `ALARM_VIBRATION` | `"vibration"` |
 | `ALARM_MOVEMENT` | `"movement"` |
+| `ALARM_LOW_SPEED` | `"lowspeed"` |
 | `ALARM_OVERSPEED` | `"overspeed"` |
+| `ALARM_FALL_DOWN` | `"fallDown"` |
+| `ALARM_FAULT` | `"fault"` |
 | `ALARM_LOW_BATTERY` | `"lowBattery"` |
 | `ALARM_LOW_POWER` | `"lowPower"` |
 | `ALARM_POWER_CUT` | `"powerCut"` |
 | `ALARM_POWER_ON` | `"powerOn"` |
 | `ALARM_POWER_OFF` | `"powerOff"` |
 | `ALARM_POWER_RESTORED` | `"powerRestored"` |
+| `ALARM_DOOR` | `"door"` |
+| `ALARM_LOCK` | `"lock"` |
+| `ALARM_UNLOCK` | `"unlock"` |
 | `ALARM_REMOVING` | `"removing"` |
 | `ALARM_TAMPERING` | `"tampering"` |
+| `ALARM_BONNET` | `"bonnet"` |
 | `ALARM_TEMPERATURE` | `"temperature"` |
 | `ALARM_GEOFENCE` | `"geofence"` |
 | `ALARM_GEOFENCE_ENTER` | `"geofenceEnter"` |
 | `ALARM_GEOFENCE_EXIT` | `"geofenceExit"` |
 | `ALARM_ACCIDENT` | `"accident"` |
-| `ALARM_FALL_DOWN` | `"fallDown"` |
 | `ALARM_IDLE` | `"idle"` |
 | `ALARM_PARKING` | `"parking"` |
 | `ALARM_JAMMING` | `"jamming"` |
 | `ALARM_GPS_ANTENNA_CUT` | `"gpsAntennaCut"` |
+| `ALARM_HIGH_RPM` | `"highRpm"` |
 | `ALARM_ACCELERATION` | `"hardAcceleration"` |
 | `ALARM_BRAKING` | `"hardBraking"` |
 | `ALARM_CORNERING` | `"hardCornering"` |
+| `ALARM_LANE_CHANGE` | `"laneChange"` |
+| `ALARM_FATIGUE_DRIVING` | `"fatigueDriving"` |
+| `ALARM_FOOT_BRAKE` | `"footBrake"` |
 | `ALARM_FUEL_LEAK` | `"fuelLeak"` |
 
 ---

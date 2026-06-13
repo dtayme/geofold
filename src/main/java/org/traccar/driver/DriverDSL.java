@@ -24,8 +24,8 @@ import java.util.Map;
  *     port 5000
  *     variant("v1") {
  *         matches { msg -> msg.startsWith("*HQ,") }
- *         decode { msg, pos -> ... }
- *         encode { cmd -> ... }
+ *         decode { msg, ctx -> ... }
+ *         encode { cmd, ctx -> ... }
  *     }
  * }
  * </pre>
