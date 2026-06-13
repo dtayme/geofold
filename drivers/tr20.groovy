@@ -28,6 +28,7 @@ protocol("tr20") {
     variant("main") {
 
         frame '%' as char, readLine()
+        matches { msg -> msg.startsWith("%%") }
 
         decode { msg, ctx ->
             def mp = PATTERN_PING.matcher(msg)

@@ -33,6 +33,7 @@ protocol("box") {
 
         maxFrameLength 1024
         frame readUntil("\r")
+        matches { msg -> msg.startsWith("H,") || msg.startsWith("E,") || msg.startsWith("L,") }
 
         decode { msg, ctx ->
 

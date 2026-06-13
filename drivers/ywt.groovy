@@ -28,6 +28,7 @@ protocol("ywt") {
     variant("main") {
 
         frame '%' as char, readLine()
+        matches { msg -> msg.startsWith("%") && !msg.startsWith("%%") && !msg.contains('$GPRMC') }
 
         decode { msg, ctx ->
             if (msg.startsWith('%SN')) {

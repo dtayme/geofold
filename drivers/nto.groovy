@@ -26,6 +26,7 @@ protocol("nto") {
     variant("main") {
 
         frame '^' as char, readUntil("&")
+        matches { msg -> msg.startsWith("^NB,") }
 
         decode { msg, ctx ->
             def m = PATTERN.matcher(msg)
@@ -58,14 +59,14 @@ protocol("nto") {
             long status = Long.parseLong(m.group(18), 16)
             pos.set(Position.KEY_STATUS, status)
 
-            if ((status & (1L << 1)) != 0)  pos.alarm = ALARM_JAMMING
-            if ((status & (1L << 25)) != 0) pos.alarm = ALARM_POWER_CUT
-            if ((status & (1L << 26)) != 0) pos.alarm = ALARM_OVERSPEED
-            if ((status & (1L << 27)) != 0) pos.alarm = ALARM_VIBRATION
-            if ((status & (1L << 28)) != 0) pos.alarm = ALARM_GEOFENCE_ENTER
-            if ((status & (1L << 29)) != 0) pos.alarm = ALARM_GEOFENCE_EXIT
-            if ((status & (1L << 32)) != 0) pos.alarm = ALARM_LOW_BATTERY
-            if ((status & (1L << 36)) != 0) pos.alarm = ALARM_DOOR
+            if ((status & (1L << 1)) != 0)  pos.addAlarm(ALARM_JAMMING)
+            if ((status & (1L << 25)) != 0) pos.addAlarm(ALARM_POWER_CUT)
+            if ((status & (1L << 26)) != 0) pos.addAlarm(ALARM_OVERSPEED)
+            if ((status & (1L << 27)) != 0) pos.addAlarm(ALARM_VIBRATION)
+            if ((status & (1L << 28)) != 0) pos.addAlarm(ALARM_GEOFENCE_ENTER)
+            if ((status & (1L << 29)) != 0) pos.addAlarm(ALARM_GEOFENCE_EXIT)
+            if ((status & (1L << 32)) != 0) pos.addAlarm(ALARM_LOW_BATTERY)
+            if ((status & (1L << 36)) != 0) pos.addAlarm(ALARM_DOOR)
 
             return pos
         }

@@ -18,7 +18,7 @@ import org.traccar.model.Position
 import java.util.regex.Pattern
 
 def PATTERN = Pattern.compile(
-    /^\$GPRS(\d+),([^,]+),(\d{2})(\d{2})(\d{2}),(\d{2})(\d{2})(\d{2}),(\d)(\d{2})(\d{5})(\d{3})(\d{5}),(\d+),(\d+),(\d+),(\d+)?,(\d+)?,(\d+),(\d+)(?:[LH]{2})?#V(\d+)/)
+    $/^\$$GPRS(\d+),([^,]+),(\d{2})(\d{2})(\d{2}),(\d{2})(\d{2})(\d{2}),(\d)(\d{2})(\d{5})(\d{3})(\d{5}),(\d+),(\d+),(\d+),(\d+)?,(\d+)?,(\d+),(\d+)(?:[LH]{2})?#V(\d+)/$)
 
 protocol("haicom") {
 
@@ -27,6 +27,7 @@ protocol("haicom") {
     variant("main") {
 
         frame '$' as char, readUntil("*")
+        matches { msg -> msg.startsWith('$GPRS') }
 
         decode { msg, ctx ->
             def m = PATTERN.matcher(msg)

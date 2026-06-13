@@ -25,6 +25,7 @@ protocol("pt3000") {
     variant("main") {
 
         frame '%' as char, readUntil("d")
+        matches { msg -> msg.startsWith("%") && msg.contains('$GPRMC') }
 
         decode { msg, ctx ->
             def m = PATTERN.matcher(msg)

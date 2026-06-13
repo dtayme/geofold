@@ -32,6 +32,7 @@ protocol("trackbox") {
 
         maxFrameLength 256
         frame readLine()
+        matches { msg -> msg.startsWith("a=connect") || (!msg.isEmpty() && Character.isDigit(msg.charAt(0))) }
 
         decode { msg, ctx ->
 

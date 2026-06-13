@@ -26,6 +26,7 @@ protocol("topflyftech") {
     variant("main") {
 
         frame readUntil(')')
+        matches { msg -> msg.startsWith("(") }
 
         decode { msg, ctx ->
             def m = PATTERN.matcher(msg)

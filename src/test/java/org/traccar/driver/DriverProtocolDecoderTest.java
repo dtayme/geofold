@@ -986,6 +986,145 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 "$AVRMC,358174067149865,143747,P,5050.1124,N,00420.0542,E,1.34,161.96,190318,A,3416,119,1,0,0,0,0,0,0*5F"));
     }
 
+    @Test
+    public void testTk102Decode() throws Exception {
+        var decoder = decoder("tk102");
+
+        // Login (type 0x80): data = ASCII device ID "123456789012345" (15 bytes = 0x0f)
+        verifyNull(decoder, binary(
+                "5b80000000000000000000000f3132333435363738393031323334355d"));
+
+        // Position (type 0x90): data = "(TRACK010203A2234.0680N11407.4040E010.000120626)"
+        verifyPosition(decoder, binary(
+                "5b90000000000000000000003028545241434b30313032303341323233342e"
+                + "303638304e31313430372e34303430453031302e303030313230363236295d"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+    }
+
+    @Test
+    public void testTopflytechDecode() throws Exception {
+        var decoder = decoder("topflyftech");
+
+        verifyPosition(decoder, text(
+                "(123456789012345,0,260612010203A2234.0680N11407.4040E10.09"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        verifyPosition(decoder, text(
+                "(987654321098765,extra,data,260612010203V2234.0680S11407.4040W5.02"));
+    }
+
+    @Test
+    public void testTrackboxDecode() throws Exception {
+        var decoder = decoder("trackbox");
+
+        // Login
+        verifyNull(decoder, text("a=connect&foo=bar&i=123456789012345"));
+
+        // Position: HHMMSSms,ddmm.mmmmNS,dddmm.mmmmEW,hdop,alt,fix,course,speed_kph,speed_kn,ddmmyy,sats
+        verifyPosition(decoder, text(
+                "010203.000,2234.0680N,11407.4040E,1.5,45.0,1,90.0,10.0,5.0,120626,8"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+    }
+
+    @Test
+    public void testBoxDecode() throws Exception {
+        var decoder = decoder("box");
+
+        // Login
+        verifyNull(decoder, text("H,login,123456789012345,extra"));
+
+        // Position: L,yymmddHHMMSS,G,lat,lon,speed_kph,course,dist_km,event,status
+        verifyPosition(decoder, text(
+                "L,260612010203,G,22.56780,114.12340,10.0,90.0,100.5,5,3"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        // Event echo (E,): server acks, no position returned
+        verifyNull(decoder, text("E,ping"));
+    }
+
+    @Test
+    public void testTr20Decode() throws Exception {
+        var decoder = decoder("tr20");
+
+        // Ping: %%anything,id → ack, null
+        verifyNull(decoder, text("%%PING,123456789012345"));
+
+        // Position: %%id,A,yymmddHHMMSS,NSdegmin,speed,course,NA,status,event
+        verifyPosition(decoder, text(
+                "%%123456789012345,A,260612010203,N2234.0680E11407.4040,10,90,NA,00000000,5"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        // With temperature
+        verifyPosition(decoder, text(
+                "%%123456789012345,A,260612010203,N2234.0680E11407.4040,10,90,B25,00000000,0"));
+    }
+
+    @Test
+    public void testYwtDecode() throws Exception {
+        var decoder = decoder("ywt");
+
+        // Sync message → ack, null
+        verifyNull(decoder, text("%SN,123456789012345:0,abc,def,ghi,jkl"));
+
+        // Position: %type,unit:sub,yymmddHHMMSS,EWlon,NSlat,alt,speed_kph,course,sats,reportId,status
+        verifyPosition(decoder, text(
+                "%KP,123456789012345:0,260612010203,E114.12340,N22.56780,45,10,90,8,001,0001"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+    }
+
+    @Test
+    public void testHaicomDecode() throws Exception {
+        var decoder = decoder("haicom");
+
+        // $GPRS<imei>,<ver>,yymmdd,HHMMSS,<flags><latDeg><latFrac×1000><lonDeg><lonFrac×1000>,spd×10,crs×10,status,gprs,ps,in,out#V<bat×10>
+        // flags=7: valid=1, lon-east=1, lat-north=1
+        // lat = 22 + 34068/60000 = 22.567800, lon = 114 + 7404/60000 = 114.123400
+        verifyPosition(decoder, text(
+                "$GPRS123456789012345,V1,260612,010203,7223406811407404,100,900,0,,,0,0#V123"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+    }
+
+    @Test
+    public void testPt3000Decode() throws Exception {
+        var decoder = decoder("pt3000");
+
+        // %<imei>,$GPRMC,HHMMSS.ms,AV,ddmm.mmmm,NS,dddmm.mmmm,EW,speed,course,ddmmyy
+        verifyPosition(decoder, text(
+                "%123456789012345,$GPRMC,010203.000,A,2234.0680,N,11407.4040,E,10.0,90.0,120626"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        verifyPosition(decoder, text(
+                "%999888777666555,$GPRMC,010203,V,2234.0680,N,11407.4040,E,,,120626"));
+    }
+
+    @Test
+    public void testNtoDecode() throws Exception {
+        var decoder = decoder("nto");
+
+        // ^NB,<imei>,<type>,ddmmyy,HHMMSS,AVM,NS,ddmm.mmmm,EW,dddmm.mmmm,speed,course,statushex,
+        verifyPosition(decoder, text(
+                "^NB,123456789012345,GPS,120626,010203,A,N,2234.0680,E,11407.4040,10.0,90,00000000,"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        // Alarm: bit 25 = power cut
+        verifyAttribute(decoder, text(
+                "^NB,123456789012345,SOS,120626,010203,A,N,2234.0680,E,11407.4040,10.0,90,02000000,"),
+                Position.KEY_ALARM, Position.ALARM_POWER_CUT);
+    }
+
+    @Test
+    public void testMictrackHqDecode() throws Exception {
+        var decoder = decoder("mictrack");
+
+        // V1 position: *HQ,id,V1,HHMMSS,AV,ddmm.mmmm,NS,dddmm.mmmm,EW,speed_kph,course,ddmmyy,status,mcc,mnc,lac,cid
+        verifyPosition(decoder, text(
+                "*HQ,123456789012345,V1,010203,A,2234.0680,N,11407.4040,E,10.0,90.0,120626,FFFFFFFF,460,0,1234,5678"),
+                position("2026-06-12 01:02:03.000", true, 22.56780, 114.12340));
+
+        // V4 heartbeat → null (acked but no position)
+        verifyNull(decoder, text("*HQ,123456789012345,V4,,20260612010203"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

@@ -67,7 +67,11 @@ def voltage = { raw ->
     v > 100 ? v / 1000.0 : v / 10.0
 }
 
-def utcNow = { new Date().format('HHmmss', TimeZone.getTimeZone('UTC')) }
+def utcNow = {
+    def sdf = new java.text.SimpleDateFormat('HHmmss')
+    sdf.setTimeZone(TimeZone.getTimeZone('UTC'))
+    sdf.format(new Date())
+}
 
 // ---------------------------------------------------------------------------
 // Protocol definition
