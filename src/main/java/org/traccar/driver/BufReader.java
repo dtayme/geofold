@@ -7,6 +7,8 @@ import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Binary buffer reader passed as the first argument to a binary variant's
@@ -26,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 public final class BufReader {
 
     private final ByteBuf buf;
+    private final List<BufReader> children = new ArrayList<>();
 
     BufReader(ByteBuf buf) {
         this.buf = buf;
@@ -189,9 +192,15 @@ public final class BufReader {
      * Returns a new {@link BufReader} over the next {@code n} bytes and
      * advances the read position by {@code n}. The slice has its own
      * independent read pointer.
+     *
+     * <p>The slice is tracked by this reader and released automatically when
+     * this reader's {@link #release()} is called — callers do not need to
+     * release slices themselves.
      */
     public BufReader slice(int n) {
-        return new BufReader(buf.readRetainedSlice(n));
+        BufReader child = new BufReader(buf.readRetainedSlice(n));
+        children.add(child);
+        return child;
     }
 
     // -------------------------------------------------------------------------
@@ -247,6 +256,9 @@ public final class BufReader {
     // -------------------------------------------------------------------------
 
     void release() {
+        for (BufReader child : children) {
+            child.release();
+        }
         if (buf.refCnt() > 0) {
             buf.release();
         }
