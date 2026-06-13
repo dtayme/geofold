@@ -24,6 +24,14 @@ import static org.mockito.Mockito.when;
 public class DriverFrameDecoderTest {
 
     @Test
+    public void rejectsNegativeLengthAdjustment() {
+        assertThrows(IllegalArgumentException.class,
+                () -> FrameSpec.readLengthField(2, 2, -1));
+        assertThrows(IllegalArgumentException.class,
+                () -> FrameSpec.readLengthFieldLE(1, 2, -3));
+    }
+
+    @Test
     public void rejectsUnterminatedFallbackLineOverDefaultLimit() {
         DriverRegistry registry = mock(DriverRegistry.class);
         when(registry.all()).thenReturn(List.of());

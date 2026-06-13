@@ -183,6 +183,8 @@ frame 0x55 as byte, { fb ->
 
 `fieldWidth` must be 1, 2, or 4 bytes.
 
+`lengthAdjustment` must be non-negative. Use a positive adjustment for checksum bytes that follow the body; omit it (or pass 0) when the length field value already accounts for the full remaining frame.
+
 ### Maximum frame length
 
 All driver frames are bounded to prevent unauthenticated clients from growing
@@ -903,6 +905,8 @@ Syntax errors in an enabled file are logged and stored on the registered
 This approval gate prevents a newly dropped or modified script from executing
 silently. It is not a sandbox: enabled Groovy code still runs inside the Traccar
 JVM with the Traccar service account privileges.
+
+Scripts run inside the Traccar JVM with the server process's OS privileges — there is no Groovy sandbox. Treat driver script approval as a privileged action equivalent to deploying code. Only approve scripts from trusted sources.
 
 ---
 

@@ -145,12 +145,16 @@ public abstract class DriverDSL extends Script {
         BufWriter writer = new BufWriter();
         body.setDelegate(writer);
         body.setResolveStrategy(Closure.DELEGATE_FIRST);
-        if (body.getMaximumNumberOfParameters() == 0) {
-            body.call();
-        } else {
-            body.call(writer);
+        try {
+            if (body.getMaximumNumberOfParameters() == 0) {
+                body.call();
+            } else {
+                body.call(writer);
+            }
+            return writer.toByteArray();
+        } finally {
+            writer.release();
         }
-        return writer.toByteArray();
     }
 
     /** Returns a scripted frame result that keeps the consumed raw bytes. */

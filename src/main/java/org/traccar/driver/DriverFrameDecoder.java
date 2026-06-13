@@ -10,6 +10,8 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.AttributeKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -30,6 +32,8 @@ import java.util.List;
  * <p>Falls back to newline framing when no variant hint matches.
  */
 public class DriverFrameDecoder extends ByteToMessageDecoder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DriverFrameDecoder.class);
 
     public static final AttributeKey<String> DRIVER_KEY  = AttributeKey.valueOf("driver.name");
     public static final AttributeKey<String> VARIANT_KEY = AttributeKey.valueOf("driver.variant");
@@ -272,7 +276,9 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                 }
             }
         }
-        buf.skipBytes(buf.readableBytes());
+        int discarded = buf.readableBytes();
+        buf.skipBytes(discarded);
+        LOGGER.debug("Discarded {} unrecognised byte(s) on port {} — no frame-start hint matched", discarded, localPort);
         return false;
     }
 

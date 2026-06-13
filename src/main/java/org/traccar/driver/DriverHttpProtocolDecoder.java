@@ -3,6 +3,7 @@
 
 package org.traccar.driver;
 
+import groovy.lang.Closure;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -10,6 +11,8 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.traccar.NetworkMessage;
 import org.traccar.BaseHttpProtocolDecoder;
 import org.traccar.Protocol;
@@ -27,6 +30,8 @@ import java.util.Date;
 import java.util.List;
 
 public class DriverHttpProtocolDecoder extends BaseHttpProtocolDecoder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DriverHttpProtocolDecoder.class);
 
     private final DriverRegistry registry;
     private final Config config;
@@ -51,7 +56,12 @@ public class DriverHttpProtocolDecoder extends BaseHttpProtocolDecoder {
         }
 
         DriverHttpContext ctx = new DriverHttpContext(this, channel, remoteAddress, match.driver(), match.variant());
-        Object result = match.variant().getDecodeClosure().call(request, ctx);
+        Closure<?> decodeClosure = match.variant().getDecodeClosure();
+        if (decodeClosure == null) {
+            sendResponse(channel, HttpResponseStatus.BAD_REQUEST);
+            return null;
+        }
+        Object result = decodeClosure.call(request, ctx);
         Object collected = collectResult(ctx, result);
         if (!ctx.hasResponded()) {
             sendResponse(channel, collected != null ? HttpResponseStatus.OK : HttpResponseStatus.BAD_REQUEST);
@@ -109,7 +119,16 @@ public class DriverHttpProtocolDecoder extends BaseHttpProtocolDecoder {
 
     int configInt(String driverName, String suffix, int defaultValue) {
         String value = configString(driverName, suffix, null);
-        return value != null ? (int) Long.decode(value).longValue() : defaultValue;
+        if (value == null) {
+            return defaultValue;
+        }
+        long decoded = Long.decode(value);
+        if (decoded < Integer.MIN_VALUE || decoded > Integer.MAX_VALUE) {
+            LOGGER.warn("Config key {}.{} value {} exceeds int range, using default {}",
+                    driverName, suffix, decoded, defaultValue);
+            return defaultValue;
+        }
+        return (int) decoded;
     }
 
     boolean configBoolean(String driverName, String suffix, boolean defaultValue) {

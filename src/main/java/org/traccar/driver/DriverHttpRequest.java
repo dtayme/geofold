@@ -9,6 +9,7 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import java.io.StringReader;
 import java.nio.charset.Charset;
@@ -75,10 +76,14 @@ public final class DriverHttpRequest {
     }
 
     public JsonObject jsonObject() {
-        return Json.createReader(new StringReader(content())).readObject();
+        try (JsonReader reader = Json.createReader(new StringReader(content()))) {
+            return reader.readObject();
+        }
     }
 
     public JsonArray jsonArray() {
-        return Json.createReader(new StringReader(content())).readArray();
+        try (JsonReader reader = Json.createReader(new StringReader(content()))) {
+            return reader.readArray();
+        }
     }
 }

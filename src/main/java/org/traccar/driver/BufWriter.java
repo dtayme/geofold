@@ -42,11 +42,17 @@ public final class BufWriter {
     }
 
     public BufWriter writeBytes(byte[] bytes) {
+        if (bytes == null) {
+            throw new IllegalArgumentException("bytes must not be null");
+        }
         buf.writeBytes(bytes);
         return this;
     }
 
     public BufWriter writeZero(int length) {
+        if (length < 0) {
+            throw new IllegalArgumentException("writeZero length must be non-negative, got " + length);
+        }
         buf.writeZero(length);
         return this;
     }
@@ -117,6 +123,12 @@ public final class BufWriter {
         byte[] bytes = new byte[buf.writerIndex()];
         buf.getBytes(0, bytes);
         return bytes;
+    }
+
+    void release() {
+        if (buf.refCnt() > 0) {
+            buf.release();
+        }
     }
 
     private int digit(char value) {

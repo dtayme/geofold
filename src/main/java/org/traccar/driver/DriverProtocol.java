@@ -121,10 +121,6 @@ public class DriverProtocol extends BaseProtocol {
         if (!getSupportedDataCommands().contains(command.getType())) {
             throw new RuntimeException("Command " + command.getType() + " is not supported in protocol " + getName());
         }
-        try {
-            channel.writeAndFlush(new NetworkMessage(command, remoteAddress)).sync();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        channel.writeAndFlush(new NetworkMessage(command, remoteAddress));
     }
 }

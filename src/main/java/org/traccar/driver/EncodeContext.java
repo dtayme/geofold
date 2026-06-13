@@ -53,7 +53,7 @@ public final class EncodeContext {
     /** Returns the frequency attribute from the command, or 0 if absent. */
     public int freq() {
         Object v = command.getAttributes().get(Command.KEY_FREQUENCY);
-        return v != null ? ((Number) v).intValue() : 0;
+        return v instanceof Number n ? n.intValue() : 0;
     }
 
     /** Returns the server attribute from the command. */

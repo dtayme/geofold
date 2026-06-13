@@ -158,7 +158,7 @@ public final class FrameSpec {
      * Total frame = {@code lengthFieldOffset + lengthFieldLength + fieldValue + lengthAdjustment}.
      */
     public static FrameSpec readLengthField(int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment) {
-        validateLengthField(lengthFieldOffset, lengthFieldLength);
+        validateLengthField(lengthFieldOffset, lengthFieldLength, lengthAdjustment);
         return new FrameSpec(Mode.READ_LENGTH_FIELD, null, 0, null,
                 lengthFieldOffset, lengthFieldLength, lengthAdjustment,
                 false, false, (byte) 0, (byte) 0, null, null);
@@ -169,7 +169,7 @@ public final class FrameSpec {
     }
 
     public static FrameSpec readLengthFieldLE(int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment) {
-        validateLengthField(lengthFieldOffset, lengthFieldLength);
+        validateLengthField(lengthFieldOffset, lengthFieldLength, lengthAdjustment);
         return new FrameSpec(Mode.READ_LENGTH_FIELD, null, 0, null,
                 lengthFieldOffset, lengthFieldLength, lengthAdjustment,
                 true, false, (byte) 0, (byte) 0, null, null);
@@ -196,12 +196,15 @@ public final class FrameSpec {
                 0, 0, 0, false, false, (byte) 0, (byte) 0, null, frameClosure);
     }
 
-    private static void validateLengthField(int lengthFieldOffset, int lengthFieldLength) {
+    private static void validateLengthField(int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment) {
         if (lengthFieldOffset < 0) {
             throw new IllegalArgumentException("Length field offset must be non-negative");
         }
         if (lengthFieldLength != 1 && lengthFieldLength != 2 && lengthFieldLength != 4) {
             throw new IllegalArgumentException("Length field must be 1, 2, or 4 bytes, got " + lengthFieldLength);
+        }
+        if (lengthAdjustment < 0) {
+            throw new IllegalArgumentException("Length adjustment must be non-negative, got " + lengthAdjustment);
         }
     }
 

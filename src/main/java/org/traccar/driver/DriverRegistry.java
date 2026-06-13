@@ -19,6 +19,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -52,6 +53,7 @@ public class DriverRegistry {
     private final Map<String, String> driverFiles = new ConcurrentHashMap<>();
     private final CompilerConfiguration compilerConfig;
     private final Storage storage;
+    private volatile Thread watcherThread;
 
     @Inject
     public DriverRegistry(Storage storage) {
@@ -151,42 +153,56 @@ public class DriverRegistry {
 
     private void loadFile(File file) {
         unloadFile(file.getName());
-        DriverScript driverScript;
-        try (GroovyClassLoader gcl = new GroovyClassLoader(
-                Thread.currentThread().getContextClassLoader(), compilerConfig)) {
-            driverScript = registerFile(file);
+        DriverScript driverScript = null;
+        byte[] sourceBytes = null;
+        try {
+            sourceBytes = Files.readAllBytes(file.toPath());
+            driverScript = registerFile(file.getName(), sourceBytes);
             if (!driverScript.getEnabled()) {
                 LOGGER.info("Driver script {} with hash {} is pending approval",
                         driverScript.getFileName(), driverScript.getHash());
                 return;
             }
-
-            Class<?> scriptClass = gcl.parseClass(file);
-            DriverDSL script = (DriverDSL) scriptClass.getDeclaredConstructor().newInstance();
-            script.run();
-            DriverDefinition def = script.getDefinition();
-            if (def == null) {
-                LOGGER.warn("Driver script {} did not call protocol() — skipping", file.getName());
-                return;
+            try (GroovyClassLoader gcl = new GroovyClassLoader(
+                    Thread.currentThread().getContextClassLoader(), compilerConfig)) {
+                Class<?> scriptClass = gcl.parseClass(
+                        new String(sourceBytes, StandardCharsets.UTF_8), file.getName());
+                DriverDSL script = (DriverDSL) scriptClass.getDeclaredConstructor().newInstance();
+                script.run();
+                DriverDefinition def = script.getDefinition();
+                if (def == null) {
+                    LOGGER.warn("Driver script {} did not call protocol() — skipping", file.getName());
+                    return;
+                }
+                drivers.put(def.getName(), def);
+                driverFiles.put(file.getName(), def.getName());
+                markLoaded(driverScript, null);
+                LOGGER.info("Loaded driver '{}' from {}", def.getName(), file.getName());
             }
-            drivers.put(def.getName(), def);
-            driverFiles.put(file.getName(), def.getName());
-            markLoaded(driverScript, null);
-            LOGGER.info("Loaded driver '{}' from {}", def.getName(), file.getName());
         } catch (Exception e) {
-            try {
-                driverScript = registerFile(file);
-                markLoaded(driverScript, e.getMessage());
-            } catch (Exception nested) {
-                LOGGER.warn("Failed to update driver script registry for {}", file.getName(), nested);
+            if (driverScript == null) {
+                try {
+                    if (sourceBytes == null) {
+                        sourceBytes = Files.readAllBytes(file.toPath());
+                    }
+                    driverScript = registerFile(file.getName(), sourceBytes);
+                } catch (Exception nested) {
+                    LOGGER.warn("Failed to register driver script {}", file.getName(), nested);
+                }
+            }
+            if (driverScript != null) {
+                try {
+                    markLoaded(driverScript, e.getMessage());
+                } catch (Exception nested) {
+                    LOGGER.warn("Failed to update driver script registry for {}", file.getName(), nested);
+                }
             }
             LOGGER.error("Failed to load driver script {}: {}", file.getName(), e.getMessage(), e);
         }
     }
 
-    private DriverScript registerFile(File file) throws IOException, StorageException, NoSuchAlgorithmException {
-        String fileName = file.getName();
-        String hash = calculateHash(file.toPath());
+    private DriverScript registerFile(String fileName, byte[] sourceBytes) throws IOException, StorageException, NoSuchAlgorithmException {
+        String hash = calculateHash(sourceBytes);
         Date now = new Date();
 
         DriverScript driverScript = storage.getObject(DriverScript.class, new Request(
@@ -219,17 +235,21 @@ public class DriverRegistry {
                 new Condition.Equals("id", driverScript.getId())));
     }
 
-    private String calculateHash(Path path) throws IOException, NoSuchAlgorithmException {
-        return DataConverter.printHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
+    private String calculateHash(byte[] bytes) throws NoSuchAlgorithmException {
+        return DataConverter.printHex(MessageDigest.getInstance("SHA-256").digest(bytes));
     }
 
     private void unloadFile(String fileName) {
         String driverName = driverFiles.remove(fileName);
-        if (driverName == null) {
-            driverName = fileName.replaceFirst("\\.groovy$", "");
-        }
-        if (drivers.remove(driverName) != null) {
+        if (driverName != null && drivers.remove(driverName) != null) {
             LOGGER.info("Unloaded driver '{}'", driverName);
+        }
+    }
+
+    public void stop() {
+        Thread thread = watcherThread;
+        if (thread != null) {
+            thread.interrupt();
         }
     }
 
@@ -238,7 +258,7 @@ public class DriverRegistry {
     // -------------------------------------------------------------------------
 
     private void startWatcher(Path dir) {
-        Thread watchThread = new Thread(() -> {
+        watcherThread = new Thread(() -> {
             try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
                 dir.register(watcher,
                         StandardWatchEventKinds.ENTRY_CREATE,
@@ -281,8 +301,8 @@ public class DriverRegistry {
             }
         }, "driver-watcher");
 
-        watchThread.setDaemon(true);
-        watchThread.start();
+        watcherThread.setDaemon(true);
+        watcherThread.start();
     }
 
     // -------------------------------------------------------------------------

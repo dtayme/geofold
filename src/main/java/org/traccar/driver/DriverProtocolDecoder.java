@@ -168,7 +168,16 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
 
     int configInt(String driverName, String suffix, int defaultValue) {
         String value = configString(driverName, suffix, null);
-        return value != null ? (int) Long.decode(value).longValue() : defaultValue;
+        if (value == null) {
+            return defaultValue;
+        }
+        long decoded = Long.decode(value);
+        if (decoded < Integer.MIN_VALUE || decoded > Integer.MAX_VALUE) {
+            LOGGER.warn("Config key {}.{} value {} exceeds int range, using default {}",
+                    driverName, suffix, decoded, defaultValue);
+            return defaultValue;
+        }
+        return (int) decoded;
     }
 
     boolean configBoolean(String driverName, String suffix, boolean defaultValue) {
