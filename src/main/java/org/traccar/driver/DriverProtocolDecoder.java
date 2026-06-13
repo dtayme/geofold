@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.Protocol;
+import org.traccar.config.Config;
 import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
 import org.traccar.session.cache.CacheManager;
@@ -35,10 +36,16 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
     private static final Logger LOGGER = LoggerFactory.getLogger(DriverProtocolDecoder.class);
 
     private final DriverRegistry registry;
+    private final Config config;
 
     public DriverProtocolDecoder(Protocol protocol, DriverRegistry registry) {
+        this(protocol, registry, null);
+    }
+
+    public DriverProtocolDecoder(Protocol protocol, DriverRegistry registry, Config config) {
         super(protocol);
         this.registry = registry;
+        this.config = config;
     }
 
     @Override
@@ -69,7 +76,7 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
             channel.attr(DriverFrameDecoder.VARIANT_KEY).set(variant.getName());
         }
 
-        DecodeContext ctx = new DecodeContext(this, channel, remoteAddress, variant);
+        DecodeContext ctx = new DecodeContext(this, channel, remoteAddress, driver, variant);
         Object result = variant.getDecodeClosure().call(message, ctx);
         return collectResult(ctx, result);
     }
@@ -99,7 +106,7 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
             return null;
         }
 
-        DecodeContext ctx = new DecodeContext(this, channel, remoteAddress, variant);
+        DecodeContext ctx = new DecodeContext(this, channel, remoteAddress, driver, variant);
         try {
             Object result = variant.getDecodeClosure().call(buf, ctx);
             return collectResult(ctx, result);
@@ -148,6 +155,30 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
 
     CacheManager cacheManager() {
         return getCacheManager();
+    }
+
+    String configString(String driverName, String suffix, String defaultValue) {
+        Config activeConfig = config != null ? config : getConfig();
+        if (activeConfig == null) {
+            return defaultValue;
+        }
+        String value = activeConfig.getString(protocolConfigKey(driverName, suffix));
+        return value != null ? value : defaultValue;
+    }
+
+    int configInt(String driverName, String suffix, int defaultValue) {
+        String value = configString(driverName, suffix, null);
+        return value != null ? (int) Long.decode(value).longValue() : defaultValue;
+    }
+
+    boolean configBoolean(String driverName, String suffix, boolean defaultValue) {
+        String value = configString(driverName, suffix, null);
+        return value != null ? Boolean.parseBoolean(value) : defaultValue;
+    }
+
+    private String protocolConfigKey(String driverName, String suffix) {
+        String normalizedSuffix = suffix.startsWith(".") ? suffix.substring(1) : suffix;
+        return driverName + "." + normalizedSuffix;
     }
 
     private DriverTransport transport(Channel channel) {

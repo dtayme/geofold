@@ -135,7 +135,7 @@ documents as those documents become machine-readable.
 | `ramac` | Exact Traccar archive match | Migrated from Java; HTTP JSON callback matching, status/GPS/alert payload fields, last-location fallback, and documented JSON acknowledgement are covered by Java-parity fixtures. |
 | `r16h` | Exact Traccar archive match | Decode, delimiter, and alarm handling appear aligned with archived Java. |
 | `riti` | Exact Traccar archive match | Migrated from Java; binary little-endian length-field framing, GPRMC decode, power, command, distance, and trip odometer fields are covered by Java-parity fixtures. |
-| `skypatrol` | Exact Traccar archive match | Migrated from Java for API 5 binary reports with embedded masks; fixture coverage matches archived default behavior. Packets that require external `protocol.mask` configuration need a future driver config API before full parity. |
+| `skypatrol` | Exact Traccar archive match | Migrated from Java; API 5 binary reports with embedded masks and `skypatrol.mask` fallback, position fields, IO/ADC/status, odometer, battery, power, and indexes are covered by Java-parity fixtures. |
 | `stl060` | Exact Traccar archive match | Migrated from Java; `#`-delimited D001 records, preamble-tolerant matching, old and new tail layouts, coordinates, inputs, outputs, odometer, fuel, RFID, temperature, charge, acceleration, and validity are covered by Java-parity fixtures. |
 | `tk102` | Exact Traccar archive match | Decode, login, heartbeat ACK, and length-field framing appear aligned with archived Java. |
 | `tlt2h` | Exact Traccar archive match | Large `##`-terminated messages, GPS, Wi-Fi, batch handling, and alarms appear aligned with archived Java. |

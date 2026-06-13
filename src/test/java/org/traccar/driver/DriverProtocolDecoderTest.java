@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.traccar.NetworkMessage;
 import org.traccar.Protocol;
 import org.traccar.ProtocolTest;
+import org.traccar.config.Config;
 import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
 
@@ -32,6 +33,10 @@ import static org.mockito.Mockito.when;
 public class DriverProtocolDecoderTest extends ProtocolTest {
 
     private DriverProtocolDecoder decoder(String name) throws Exception {
+        return decoder(name, new Config());
+    }
+
+    private DriverProtocolDecoder decoder(String name, Config config) throws Exception {
         DriverDefinition definition = loadDriver(name);
 
         DriverRegistry registry = mock(DriverRegistry.class);
@@ -45,7 +50,7 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
         Protocol protocol = mock(Protocol.class);
         when(protocol.getName()).thenReturn(name);
 
-        return inject(new TestDriverProtocolDecoder(protocol, registry, definition));
+        return inject(new TestDriverProtocolDecoder(protocol, registry, definition, config));
     }
 
     private TestDriverHttpProtocolDecoder httpDecoder(String name) throws Exception {
@@ -571,6 +576,11 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
         verifyPosition(decoder, binary(
                 "0005021004FFFFFFFF0000000D313134373735383300CB000000000E11070C010184D032FB3841370000000016072B000017050032000000000000024E0C071116072C105900050000000000050000000000050000000003100260B7363B6306C11A00B73637F206BF19B73637F106B50EB73638B106BB0BB7363B6106B80AB73637F306B709000000000000000000"));
 
+        Config config = mock(Config.class);
+        when(config.getString("skypatrol.mask")).thenReturn("-1");
+        verifyPosition(decoder("skypatrol", config), binary(
+                "00050210000000000D313134373735383300CB000000000E11070C010184D032FB3841370000000016072B000017050032000000000000024E0C071116072C105900050000000000050000000000050000000003100260B7363B6306C11A00B73637F206BF19B73637F106B50EB73638B106BB0BB7363B6106B80AB73637F306B709000000000000000000"));
+
         verifyNull(decoder, binary(
                 "000500030101383637383434303031373832333336420102000c0000fa07b5e101876c5b0e0a111606131c1b5e"));
 
@@ -717,8 +727,9 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
 
         private final DriverDefinition definition;
 
-        TestDriverProtocolDecoder(Protocol protocol, DriverRegistry registry, DriverDefinition definition) {
-            super(protocol, registry);
+        TestDriverProtocolDecoder(
+                Protocol protocol, DriverRegistry registry, DriverDefinition definition, Config config) {
+            super(protocol, registry, config);
             this.definition = definition;
         }
 

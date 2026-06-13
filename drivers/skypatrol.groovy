@@ -8,8 +8,8 @@
  *   docs/driver-source-docs/traccar-protocols/skypatrol/
  *
  * Supports documented API 5 binary position reports with embedded reporting
- * masks. Packets that rely on an external configured protocol mask are ignored
- * until the driver DSL exposes protocol-level config defaults.
+ * masks, plus the protocol-level skypatrol.mask fallback used by devices that
+ * omit the mask from each packet.
  */
 
 import org.traccar.helper.DateBuilder
@@ -45,7 +45,7 @@ protocol("skypatrol") {
             int apiNumber = buf.readUShort()
             int commandType = buf.readUByte()
             int messageType = from4(buf.readUByte())
-            long mask = 0
+            long mask = ctx.configInt('mask', 0)
             if (buf.readUByte() == 4) {
                 mask = buf.readUInt()
             }

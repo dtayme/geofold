@@ -73,7 +73,7 @@ public class DriverProtocol extends BaseProtocol {
                 pipeline.addLast(new StringEncoder());
                 pipeline.addLast(new DriverMessageAdapter(registry));
                 pipeline.addLast(new DriverProtocolEncoder(DriverProtocol.this, registry));
-                pipeline.addLast(new DriverProtocolDecoder(DriverProtocol.this, registry));
+                pipeline.addLast(new DriverProtocolDecoder(DriverProtocol.this, registry, config));
             }
         });
     }
@@ -85,7 +85,7 @@ public class DriverProtocol extends BaseProtocol {
                 pipeline.addLast(new StringEncoder());
                 pipeline.addLast(new DriverMessageAdapter(registry));
                 pipeline.addLast(new DriverProtocolEncoder(DriverProtocol.this, registry));
-                pipeline.addLast(new DriverProtocolDecoder(DriverProtocol.this, registry));
+                pipeline.addLast(new DriverProtocolDecoder(DriverProtocol.this, registry, config));
             }
         });
     }
@@ -97,7 +97,7 @@ public class DriverProtocol extends BaseProtocol {
                 pipeline.addLast(new HttpResponseEncoder());
                 pipeline.addLast(new HttpRequestDecoder());
                 pipeline.addLast(new HttpObjectAggregator(MAX_HTTP_LENGTH));
-                pipeline.addLast(new DriverHttpProtocolDecoder(DriverProtocol.this, registry));
+                pipeline.addLast(new DriverHttpProtocolDecoder(DriverProtocol.this, registry, config));
             }
         });
     }

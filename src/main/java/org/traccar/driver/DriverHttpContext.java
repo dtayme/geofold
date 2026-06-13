@@ -19,15 +19,17 @@ public final class DriverHttpContext {
     private final DriverHttpProtocolDecoder decoder;
     private final Channel channel;
     private final SocketAddress remoteAddress;
+    private final DriverDefinition driver;
     private final VariantDefinition variant;
     private final List<Position> emitted = new ArrayList<>();
     private boolean responded;
 
     DriverHttpContext(DriverHttpProtocolDecoder decoder, Channel channel,
-                      SocketAddress remoteAddress, VariantDefinition variant) {
+                      SocketAddress remoteAddress, DriverDefinition driver, VariantDefinition variant) {
         this.decoder = decoder;
         this.channel = channel;
         this.remoteAddress = remoteAddress;
+        this.driver = driver;
         this.variant = variant;
     }
 
@@ -114,6 +116,18 @@ public final class DriverHttpContext {
 
     public String alarm(String event) {
         return variant.resolveAlarm(event, null);
+    }
+
+    public int configInt(String suffix, int defaultValue) {
+        return decoder.configInt(driver.getName(), suffix, defaultValue);
+    }
+
+    public boolean configBoolean(String suffix, boolean defaultValue) {
+        return decoder.configBoolean(driver.getName(), suffix, defaultValue);
+    }
+
+    public String configString(String suffix, String defaultValue) {
+        return decoder.configString(driver.getName(), suffix, defaultValue);
     }
 
     public void emit(Position position) {

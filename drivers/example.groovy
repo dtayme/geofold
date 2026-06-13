@@ -133,12 +133,16 @@ protocol("example") {
         // Decode closure
         //
         // msg — the raw trimmed message string extracted by the frame decoder
-        // ctx — DecodeContext: session(id), session(), newPosition(), ack(), alarm(), lastLocation()
+        // ctx — DecodeContext: session(id), session(), newPosition(), ack(), alarm(), lastLocation(),
+        //      configInt(), configBoolean(), configString()
         //
         // Return a populated Position or null (null keeps the connection alive
         // but stores nothing — use it for heartbeats and ACK-only messages).
         // ----------------------------------------------------------------
         decode { msg, ctx ->
+
+            // Protocol-scoped config reads example.mask/example.ack/etc.
+            // def configuredMask = ctx.configInt('mask', 0)
 
             // 1. Validate checksum before doing any work
             if (!checksum(msg)) return null

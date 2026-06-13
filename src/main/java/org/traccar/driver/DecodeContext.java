@@ -38,14 +38,16 @@ public final class DecodeContext {
     private final DriverProtocolDecoder decoder;
     private final Channel channel;
     private final SocketAddress remoteAddress;
+    private final DriverDefinition driver;
     private final VariantDefinition variant;
     private final List<Position> emitted = new ArrayList<>();
 
     DecodeContext(DriverProtocolDecoder decoder, Channel channel,
-                  SocketAddress remoteAddress, VariantDefinition variant) {
+                  SocketAddress remoteAddress, DriverDefinition driver, VariantDefinition variant) {
         this.decoder = decoder;
         this.channel = channel;
         this.remoteAddress = remoteAddress;
+        this.driver = driver;
         this.variant = variant;
     }
 
@@ -148,6 +150,29 @@ public final class DecodeContext {
     /** Returns the device model extracted from the message by this variant's model closure. */
     public String model(String message) {
         return variant.extractModel(message);
+    }
+
+    /**
+     * Reads a protocol-scoped integer config value for this driver. For example,
+     * {@code ctx.configInt("mask", 0)} in {@code drivers/skypatrol.groovy}
+     * reads the Traccar config key {@code skypatrol.mask}.
+     */
+    public int configInt(String suffix, int defaultValue) {
+        return decoder.configInt(driver.getName(), suffix, defaultValue);
+    }
+
+    /**
+     * Reads a protocol-scoped boolean config value for this driver.
+     */
+    public boolean configBoolean(String suffix, boolean defaultValue) {
+        return decoder.configBoolean(driver.getName(), suffix, defaultValue);
+    }
+
+    /**
+     * Reads a protocol-scoped string config value for this driver.
+     */
+    public String configString(String suffix, String defaultValue) {
+        return decoder.configString(driver.getName(), suffix, defaultValue);
     }
 
     /**

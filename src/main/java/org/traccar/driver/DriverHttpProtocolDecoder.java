@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import org.traccar.NetworkMessage;
 import org.traccar.BaseHttpProtocolDecoder;
 import org.traccar.Protocol;
+import org.traccar.config.Config;
 import org.traccar.model.Command;
 import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
@@ -28,10 +29,16 @@ import java.util.List;
 public class DriverHttpProtocolDecoder extends BaseHttpProtocolDecoder {
 
     private final DriverRegistry registry;
+    private final Config config;
 
     public DriverHttpProtocolDecoder(Protocol protocol, DriverRegistry registry) {
+        this(protocol, registry, null);
+    }
+
+    public DriverHttpProtocolDecoder(Protocol protocol, DriverRegistry registry, Config config) {
         super(protocol);
         this.registry = registry;
+        this.config = config;
     }
 
     @Override
@@ -43,7 +50,7 @@ public class DriverHttpProtocolDecoder extends BaseHttpProtocolDecoder {
             return null;
         }
 
-        DriverHttpContext ctx = new DriverHttpContext(this, channel, remoteAddress, match.variant());
+        DriverHttpContext ctx = new DriverHttpContext(this, channel, remoteAddress, match.driver(), match.variant());
         Object result = match.variant().getDecodeClosure().call(request, ctx);
         Object collected = collectResult(ctx, result);
         if (!ctx.hasResponded()) {
@@ -89,6 +96,30 @@ public class DriverHttpProtocolDecoder extends BaseHttpProtocolDecoder {
     Command nextQueuedCommand(long deviceId) {
         Collection<Command> commands = getCommandsManager().readQueuedCommands(deviceId, 1);
         return commands.isEmpty() ? null : commands.iterator().next();
+    }
+
+    String configString(String driverName, String suffix, String defaultValue) {
+        Config activeConfig = config != null ? config : getConfig();
+        if (activeConfig == null) {
+            return defaultValue;
+        }
+        String value = activeConfig.getString(protocolConfigKey(driverName, suffix));
+        return value != null ? value : defaultValue;
+    }
+
+    int configInt(String driverName, String suffix, int defaultValue) {
+        String value = configString(driverName, suffix, null);
+        return value != null ? (int) Long.decode(value).longValue() : defaultValue;
+    }
+
+    boolean configBoolean(String driverName, String suffix, boolean defaultValue) {
+        String value = configString(driverName, suffix, null);
+        return value != null ? Boolean.parseBoolean(value) : defaultValue;
+    }
+
+    private String protocolConfigKey(String driverName, String suffix) {
+        String normalizedSuffix = suffix.startsWith(".") ? suffix.substring(1) : suffix;
+        return driverName + "." + normalizedSuffix;
     }
 
     void sendHttpResponse(Channel channel, int status, String body, String contentType) {
