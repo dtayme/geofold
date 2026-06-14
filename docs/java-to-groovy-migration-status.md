@@ -5,7 +5,7 @@ Copyright (C) 2026 FOGNETX <Drew.Taylor@fognetx.com>
 
 # Java To Groovy Protocol Migration Status
 
-Status date: 2026-06-14
+Status date: 2026-06-15
 
 The migration goal is feature-complete Groovy protocol coverage from source
 documentation, with archived Java parity used only as supporting evidence.
@@ -31,15 +31,17 @@ documentation, with archived Java parity used only as supporting evidence.
 | `t800x` | Migrated to `drivers/t800x.groovy`, backed by the downloaded Topflytech/T800X protocol documents, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol tests moved to `archived-protocols/t800x/`. |
 | `thinkpower` | Migrated to `drivers/thinkpower.groovy`, backed by the downloaded ThinkPower tracker protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/thinkpower/`. |
 | `v680` | Migrated to `drivers/v680.groovy`, backed by the downloaded V680 GPRS protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/v680/`. |
+| `khd` | Migrated to `drivers/khd.groovy` covering binary `0x29 0x29` framing with `readLengthField(3, 2)`, BCD date/coordinate helpers, dual device-ID lookup (hex and decimal-with-offset), MSG_LOGIN/CONFIRMATION/POSITION/ALARM/PERIPHERAL/REPLY message types, peripheral subtypes (fuel, temp, driver ID, multi-fuel, battery, cell towers), and 7 commands. Java source, encoder, and old Java protocol tests moved to `archived-protocols/khd/`. |
+| `xirgo` | Migrated to `drivers/xirgo.groovy` covering `##`-terminated text framing, auto-detection of old vs new fixed format (per-channel store), custom configurable field-name form, UDP ACK, event→alarm/ignition/motion mapping, and output-control command. Java source, encoder, and old Java protocol tests moved to `archived-protocols/xirgo/`. |
 
 ## Remaining Active Java Protocols
 
-53 documented, official, or alias-documented Java protocol implementations
+51 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
 current driver DSL without adding HTTP request/response support. Large binary
-protocols such as `jt808`, `teltonika`, `gt06`, `ruptela`, and `xirgo` need
+protocols such as `jt808`, `teltonika`, `gt06`, and `ruptela` need
 protocol-specific frame, checksum, batch, attachment, and command audits before
 safe migration.
 

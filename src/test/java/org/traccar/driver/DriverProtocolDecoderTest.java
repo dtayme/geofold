@@ -1197,6 +1197,60 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 Position.KEY_BATTERY_LEVEL, 99);
     }
 
+    @Test
+    public void testKhdDecode() throws Exception {
+        var decoder = decoder("khd");
+
+        verifyNull(decoder, binary(
+                "2929b1000605162935b80d"));
+
+        verifyPosition(decoder, binary(
+                "2929800028258b8c10210731035840031534240542120200000337fb000000ffff5a00000a0000000005005d0d"));
+
+        verifyPosition(decoder, binary(
+                "29298100280a9f9538081228160131022394301140372500000330ff0000007ffc0f00001e000000000034290d"));
+
+        verifyPosition(decoder, binary(
+                "29298200230aa2cc391205030505220285947903109550008002078400000002000000000000750d"));
+
+        verifyAttribute(decoder, binary(
+                "2929a300403099934c2004030943310000000000000000000000007b0000007fff0e0000e70014000000000018050b01303030314330334437312102007b2203140dda610d"),
+                Position.KEY_DRIVER_UNIQUE_ID, "0001C03D71");
+
+        verifyAttribute(decoder, binary(
+                "2929a3003e1680ba0a2304180759500000000000000000000000007b00000080001914000000000000000000162001641b0b0000249002bc58030001cc46020000e70d"),
+                Position.KEY_BATTERY_LEVEL, 100);
+    }
+
+    @Test
+    public void testXirgoDecode() throws Exception {
+        var decoder = decoder("xirgo");
+
+        verifyPosition(decoder, text(
+                "$$354660046140722,6001,2013/01/22,15:36:18,25.80907,-80.32531,7.1,19,165.2,11,0.8,11.1,17,1,1,3.9,2##"),
+                position("2013-01-22 15:36:18.000", true, 25.80907, -80.32531));
+
+        verifyPosition(decoder, text(
+                "$$354660046140722,4003,2013/01/22,15:36:20,25.80907,-80.32531,7.1,0,165.2,11,0.8,11.1,17,1,1,3.9,2##"));
+
+        var decoderNew = decoder("xirgo");
+
+        verifyPosition(decoderNew, text(
+                "$$352054058132185,4001,2017/04/21,00:01:05,32.54659,-116.90670,143.2,0,0,0,598,0.0,12,0.9,765840,7.0,14.5,19,1,1,0011,8.5,63.2,5,21999,184,255,671,207,100,185##"),
+                position("2017-04-21 00:01:05.000", true, 32.54659, -116.90670));
+
+        verifyPosition(decoderNew, text(
+                "$$352054058132185,6011,2017/04/21,04:57:10,32.49658,-116.85957,250.9,0,0,0,602,0.0,12,0.8,765876,7.0,14.1,21,1,1,0011,10.1,0.0,5,170917890,280,255,627,0,100,167##"));
+
+        Config config = mock(Config.class);
+        when(config.getString("xirgo.form")).thenReturn("UID,EV,D,T,LT,LN,AL,GSPT,HD,SV,HP,BV,CQ,GS,SI,IG,OT");
+        var decoderCustom = decoder("xirgo", config);
+
+        verifyPosition(decoderCustom, text(
+                "$$183900034,4002,03/30/2019,02:15:22,46.848577,-114.022213,978,0.0,172.3,16,1.2,13.291,20,3,2,2,1##"),
+                position("2019-03-30 02:15:22.000", true, 46.84858, -114.02221));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());
