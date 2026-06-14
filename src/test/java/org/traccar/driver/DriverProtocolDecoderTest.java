@@ -1251,6 +1251,56 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 position("2019-03-30 02:15:22.000", true, 46.84858, -114.02221));
     }
 
+    @Test
+    public void testMiniFinderDecode() throws Exception {
+        var decoder = decoder("minifinder");
+
+        verifyNull(decoder, text(
+                "!1,867273023933661,V07S.5701.1621,100"));
+
+        verifyAttributes(decoder, text(
+                "!3,ok"));
+
+        verifyNull(decoder, text(
+                "!1,123456789012345"));
+
+        verifyAttribute(decoder, text(
+                "!4,10,040123,,,1.0,110,0,0S,33"),
+                "phone1", "040123");
+
+        verifyAttribute(decoder, text(
+                "!5,17,V,50"),
+                Position.KEY_BATTERY_LEVEL, 50);
+
+        verifyAttributes(decoder, text(
+                "!5,17,V"));
+
+        verifyNull(decoder, text(
+                "!1,860719027585011"));
+
+        verifyPosition(decoder, text(
+                "!D,02/05/17,19:56:17,47.083542,15.482373,0,0,100001,479.3,100,4,9,0"));
+
+        verifyPosition(decoder, text(
+                "!D,15/04/17,13:58:53,51.483067,-0.452548,60,180,140001,28.7,47,4,13,0"));
+
+        verifyPosition(decoder, text(
+                "!D,07/04/17,05:42:26,-37.588970,145.121231,0,0,0c0001,185.2,92,7,14,1.2"));
+
+        verifyPosition(decoder, text(
+                "!C,30/1/16,1:1:6,31.259157,30.020910,0,0,100001,25.32,100,0.03,0.01,0"));
+
+        verifyPosition(decoder, text(
+                "!A,26/10/12,00:28:41,7.770385,-72.215706,0.0,25101,0"));
+
+        verifyPosition(decoder, text(
+                "!D,22/2/14,13:40:58,56.899601,14.811541,0,0,1,176.0,98,5,16,0"),
+                position("2014-02-22 13:40:58.000", true, 56.89960, 14.81154));
+
+        verifyPosition(decoder, text(
+                "!D,3/7/13,6:35:30,22.645952,114.040436,0.0,225.8,1f0001,12.11,98,0,0,0"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

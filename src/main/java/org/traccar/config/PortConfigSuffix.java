@@ -39,7 +39,6 @@ import org.traccar.protocol.MegastekProtocol;
 import org.traccar.protocol.MeiligaoProtocol;
 import org.traccar.protocol.MeitrackProtocol;
 import org.traccar.protocol.Minifinder2Protocol;
-import org.traccar.protocol.MiniFinderProtocol;
 import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavigilProtocol;
 import org.traccar.protocol.NavisProtocol;
@@ -96,7 +95,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(RuptelaProtocol.class, 5046);
         put(AplicomProtocol.class, 5049);
         put(OsmAndProtocol.class, 5055);
-        put(MiniFinderProtocol.class, 5062);
         put(EelinkProtocol.class, 5064);
         put(UlbotechProtocol.class, 5072);
         put(TramigoProtocol.class, 5073);

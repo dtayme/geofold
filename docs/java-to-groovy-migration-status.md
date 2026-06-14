@@ -5,7 +5,7 @@ Copyright (C) 2026 FOGNETX <Drew.Taylor@fognetx.com>
 
 # Java To Groovy Protocol Migration Status
 
-Status date: 2026-06-15
+Status date: 2026-06-14
 
 The migration goal is feature-complete Groovy protocol coverage from source
 documentation, with archived Java parity used only as supporting evidence.
@@ -33,10 +33,11 @@ documentation, with archived Java parity used only as supporting evidence.
 | `v680` | Migrated to `drivers/v680.groovy`, backed by the downloaded V680 GPRS protocol PDF and Java-parity driver decode tests. Java source and old Java protocol test moved to `archived-protocols/v680/`. |
 | `khd` | Migrated to `drivers/khd.groovy` covering binary `0x29 0x29` framing with `readLengthField(3, 2)`, BCD date/coordinate helpers, dual device-ID lookup (hex and decimal-with-offset), MSG_LOGIN/CONFIRMATION/POSITION/ALARM/PERIPHERAL/REPLY message types, peripheral subtypes (fuel, temp, driver ID, multi-fuel, battery, cell towers), and 7 commands. Java source, encoder, and old Java protocol tests moved to `archived-protocols/khd/`. |
 | `xirgo` | Migrated to `drivers/xirgo.groovy` covering `##`-terminated text framing, auto-detection of old vs new fixed format (per-channel store), custom configurable field-name form, UDP ACK, event→alarm/ignition/motion mapping, and output-control command. Java source, encoder, and old Java protocol tests moved to `archived-protocols/xirgo/`. |
+| `minifinder` | Migrated to `drivers/minifinder.groovy` covering `;`-terminated text framing, channel-session login (`!1`), message types !3/!4/!5/!A/!B/!C/!D, flag-word decoding (validity/alarms/RSSI/charge), and 11 commands (timezone, voice-monitoring, speed/geofence/vibration/fall alarms, AGPS, power-saving/deep-sleep modes, SOS number, indicator). Java source, encoder, and old Java protocol tests moved to `archived-protocols/minifinder/`. |
 
 ## Remaining Active Java Protocols
 
-51 documented, official, or alias-documented Java protocol implementations
+50 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
