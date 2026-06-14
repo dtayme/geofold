@@ -14,8 +14,9 @@ import java.util.Map;
  *
  * <p>Text framing modes:
  * <ul>
- *   <li>{@link Mode#READ_LINE}         — scan for {@code \n}, strip trailing {@code \r}
- *   <li>{@link Mode#READ_UNTIL_BYTES}  — scan for an arbitrary byte sequence terminator
+ *   <li>{@link Mode#READ_LINE}            — scan for {@code \n}, strip trailing {@code \r}
+ *   <li>{@link Mode#READ_UNTIL_BYTES}     — scan for an arbitrary byte sequence terminator
+ *   <li>{@link Mode#READ_UNTIL_ANY_BYTES} — scan for the first matching terminator among alternatives
  * </ul>
  *
  * <p>Binary framing modes (the decode closure receives a {@link BufReader}, not a {@code String}):
@@ -23,7 +24,8 @@ import java.util.Map;
  *   <li>{@link Mode#READ_FIXED}        — always read exactly {@code size} bytes
  *   <li>{@link Mode#READ_FIXED_ANY}    — read one of several fixed sizes
  *   <li>{@link Mode#READ_LENGTH_FIELD} — read a length field embedded in the header,
- *       then read that many bytes plus an optional adjustment
+ *       then read that many bytes plus an optional adjustment (may be negative when the
+ *       length field counts bytes already consumed, e.g. the field itself)
  * </ul>
  *
  * <p>For {@code READ_LENGTH_FIELD}, the total frame size is:
@@ -31,29 +33,35 @@ import java.util.Map;
  *   lengthFieldOffset + lengthFieldLength + fieldValue + lengthAdjustment
  * </pre>
  *
- * <p>Example — 2-byte magic header, 2-byte length field, body, 1-byte checksum:
+ * <p>Example — 2-byte total-length field (value counts the 2-byte field itself):
+ * <pre>
+ *   frame 0x00 as byte, readLengthField(0, 2, -2)
+ * </pre>
+ *
+ * <p>Example — 2-byte magic header, 2-byte payload-length field, 1-byte checksum:
  * <pre>
  *   frame 0x78 as byte, readLengthField(2, 2, 1)
- *   //            offset=2 (skip magic), fieldLen=2, adjustment=1 (checksum)
  * </pre>
  */
 public final class FrameSpec {
 
     public enum Mode {
-        READ_UNTIL_BYTES,   // scan for a byte-sequence terminator (text)
-        READ_LINE,          // scan for \n, strip trailing \r (text)
-        READ_FIXED,         // read exactly `size` bytes (binary)
-        READ_FIXED_ANY,     // read one of several fixed frame sizes (binary)
-        READ_LENGTH_FIELD,  // use embedded length field (binary)
-        READ_ESCAPED_DELIMITER, // delimiter-framed binary stream with escape replacements
-        READ_SCRIPTED,      // custom frame extraction closure (binary)
+        READ_UNTIL_BYTES,        // scan for a byte-sequence terminator (text)
+        READ_UNTIL_ANY_BYTES,    // scan for the first matching terminator among alternatives (text)
+        READ_LINE,               // scan for \n, strip trailing \r (text)
+        READ_FIXED,              // read exactly `size` bytes (binary)
+        READ_FIXED_ANY,          // read one of several fixed frame sizes (binary)
+        READ_LENGTH_FIELD,       // use embedded length field (binary)
+        READ_ESCAPED_DELIMITER,  // delimiter-framed binary stream with escape replacements
+        READ_SCRIPTED,           // custom frame extraction closure (binary)
     }
 
     // ---- shared ----
     private final Mode mode;
 
     // ---- text modes ----
-    private final byte[] terminator;        // READ_UNTIL_BYTES / READ_LINE
+    private final byte[] terminator;         // READ_UNTIL_BYTES / READ_LINE (single terminator)
+    private final byte[][] terminators;      // READ_UNTIL_ANY_BYTES (multiple alternatives)
     private final boolean includeTerminator;
 
     // ---- READ_FIXED ----
@@ -61,9 +69,9 @@ public final class FrameSpec {
     private final int[] sizes;
 
     // ---- READ_LENGTH_FIELD ----
-    private final int lengthFieldOffset;    // bytes before the length field
-    private final int lengthFieldLength;    // width of the length field: 1, 2, or 4
-    private final int lengthAdjustment;     // extra bytes after the field value
+    private final int lengthFieldOffset;      // bytes before the length field
+    private final int lengthFieldLength;      // width of the length field: 1, 2, or 4
+    private final int lengthAdjustment;       // extra bytes after field value (may be negative)
     private final boolean lengthFieldLittleEndian;
 
     // ---- READ_ESCAPED_DELIMITER ----
@@ -74,13 +82,14 @@ public final class FrameSpec {
     // ---- READ_SCRIPTED ----
     private final Closure<?> frameClosure;
 
-    private FrameSpec(Mode mode, byte[] terminator, int size, int[] sizes,
+    private FrameSpec(Mode mode, byte[] terminator, byte[][] terminators, int size, int[] sizes,
                       int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment,
                       boolean lengthFieldLittleEndian, boolean includeTerminator,
                       byte delimiter, byte escape, Map<Byte, Byte> escapeMap,
                       Closure<?> frameClosure) {
         this.mode = mode;
         this.terminator = terminator;
+        this.terminators = terminators;
         this.size = size;
         this.sizes = sizes;
         this.lengthFieldOffset = lengthFieldOffset;
@@ -100,16 +109,38 @@ public final class FrameSpec {
 
     public static FrameSpec readUntil(String terminator) {
         return new FrameSpec(Mode.READ_UNTIL_BYTES, terminator.getBytes(StandardCharsets.UTF_8),
-                0, null, 0, 0, 0, false, false, (byte) 0, (byte) 0, null, null);
+                null, 0, null, 0, 0, 0, false, false, (byte) 0, (byte) 0, null, null);
     }
 
     public static FrameSpec readUntilKeep(String terminator) {
         return new FrameSpec(Mode.READ_UNTIL_BYTES, terminator.getBytes(StandardCharsets.UTF_8),
-                0, null, 0, 0, 0, false, true, (byte) 0, (byte) 0, null, null);
+                null, 0, null, 0, 0, 0, false, true, (byte) 0, (byte) 0, null, null);
+    }
+
+    /**
+     * Text: scan for the first occurrence of any of the given terminators.
+     * The frame ends immediately before the matched terminator (exclusive).
+     * Requires at least two alternatives.
+     *
+     * <p>Example — newline, semicolon, or asterisk all end the frame:
+     * <pre>
+     *   frame readUntilAny("\r\n", "\n", ";", "*")
+     * </pre>
+     */
+    public static FrameSpec readUntilAny(String... terminatorStrings) {
+        if (terminatorStrings == null || terminatorStrings.length < 2) {
+            throw new IllegalArgumentException("At least two terminators are required for readUntilAny");
+        }
+        byte[][] terminators = new byte[terminatorStrings.length][];
+        for (int i = 0; i < terminatorStrings.length; i++) {
+            terminators[i] = terminatorStrings[i].getBytes(StandardCharsets.UTF_8);
+        }
+        return new FrameSpec(Mode.READ_UNTIL_ANY_BYTES, null, terminators, 0, null,
+                0, 0, 0, false, false, (byte) 0, (byte) 0, null, null);
     }
 
     public static FrameSpec readLine() {
-        return new FrameSpec(Mode.READ_LINE, new byte[]{'\n'}, 0, null,
+        return new FrameSpec(Mode.READ_LINE, new byte[]{'\n'}, null, 0, null,
                 0, 0, 0, false, false, (byte) 0, (byte) 0, null, null);
     }
 
@@ -118,7 +149,7 @@ public final class FrameSpec {
         if (size <= 0) {
             throw new IllegalArgumentException("Fixed frame size must be positive");
         }
-        return new FrameSpec(Mode.READ_FIXED, null, size, null,
+        return new FrameSpec(Mode.READ_FIXED, null, null, size, null,
                 0, 0, 0, false, false, (byte) 0, (byte) 0, null, null);
     }
 
@@ -139,7 +170,7 @@ public final class FrameSpec {
             }
             previous = size;
         }
-        return new FrameSpec(Mode.READ_FIXED_ANY, null, 0, sorted,
+        return new FrameSpec(Mode.READ_FIXED_ANY, null, null, 0, sorted,
                 0, 0, 0, false, false, (byte) 0, (byte) 0, null, null);
     }
 
@@ -153,13 +184,16 @@ public final class FrameSpec {
     }
 
     /**
-     * Binary: like {@link #readLengthField(int, int)} but adds
-     * {@code lengthAdjustment} extra bytes after the field value.
+     * Binary: like {@link #readLengthField(int, int)} but adds {@code lengthAdjustment}
+     * extra bytes after the field value.
      * Total frame = {@code lengthFieldOffset + lengthFieldLength + fieldValue + lengthAdjustment}.
+     *
+     * <p>{@code lengthAdjustment} may be negative when the length field encodes the total frame
+     * size including bytes already consumed. The computed total must still be positive at runtime.
      */
     public static FrameSpec readLengthField(int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment) {
-        validateLengthField(lengthFieldOffset, lengthFieldLength, lengthAdjustment);
-        return new FrameSpec(Mode.READ_LENGTH_FIELD, null, 0, null,
+        validateLengthField(lengthFieldOffset, lengthFieldLength);
+        return new FrameSpec(Mode.READ_LENGTH_FIELD, null, null, 0, null,
                 lengthFieldOffset, lengthFieldLength, lengthAdjustment,
                 false, false, (byte) 0, (byte) 0, null, null);
     }
@@ -169,8 +203,8 @@ public final class FrameSpec {
     }
 
     public static FrameSpec readLengthFieldLE(int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment) {
-        validateLengthField(lengthFieldOffset, lengthFieldLength, lengthAdjustment);
-        return new FrameSpec(Mode.READ_LENGTH_FIELD, null, 0, null,
+        validateLengthField(lengthFieldOffset, lengthFieldLength);
+        return new FrameSpec(Mode.READ_LENGTH_FIELD, null, null, 0, null,
                 lengthFieldOffset, lengthFieldLength, lengthAdjustment,
                 true, false, (byte) 0, (byte) 0, null, null);
     }
@@ -184,7 +218,7 @@ public final class FrameSpec {
             converted.put(toByte(entry.getKey(), "escape replacement key"),
                     toByte(entry.getValue(), "escape replacement value"));
         }
-        return new FrameSpec(Mode.READ_ESCAPED_DELIMITER, null, 0, null,
+        return new FrameSpec(Mode.READ_ESCAPED_DELIMITER, null, null, 0, null,
                 0, 0, 0, false, false, delimiter, escape, converted, null);
     }
 
@@ -192,19 +226,16 @@ public final class FrameSpec {
         if (frameClosure == null) {
             throw new IllegalArgumentException("Frame closure is required");
         }
-        return new FrameSpec(Mode.READ_SCRIPTED, null, 0, null,
+        return new FrameSpec(Mode.READ_SCRIPTED, null, null, 0, null,
                 0, 0, 0, false, false, (byte) 0, (byte) 0, null, frameClosure);
     }
 
-    private static void validateLengthField(int lengthFieldOffset, int lengthFieldLength, int lengthAdjustment) {
+    private static void validateLengthField(int lengthFieldOffset, int lengthFieldLength) {
         if (lengthFieldOffset < 0) {
             throw new IllegalArgumentException("Length field offset must be non-negative");
         }
         if (lengthFieldLength != 1 && lengthFieldLength != 2 && lengthFieldLength != 4) {
             throw new IllegalArgumentException("Length field must be 1, 2, or 4 bytes, got " + lengthFieldLength);
-        }
-        if (lengthAdjustment < 0) {
-            throw new IllegalArgumentException("Length adjustment must be non-negative, got " + lengthAdjustment);
         }
     }
 
@@ -229,9 +260,14 @@ public final class FrameSpec {
         return mode;
     }
 
-    /** Used by text modes (READ_UNTIL_BYTES, READ_LINE). */
+    /** Used by single-terminator text modes (READ_UNTIL_BYTES, READ_LINE). */
     public byte[] getTerminator() {
         return terminator;
+    }
+
+    /** Used by READ_UNTIL_ANY_BYTES. Each element is one alternative terminator byte sequence. */
+    public byte[][] getTerminators() {
+        return terminators;
     }
 
     /** Used by READ_FIXED. */
@@ -254,7 +290,7 @@ public final class FrameSpec {
         return lengthFieldLength;
     }
 
-    /** Used by READ_LENGTH_FIELD: added to the field value to get trailing bytes. */
+    /** Used by READ_LENGTH_FIELD: added to the field value to get trailing bytes (may be negative). */
     public int getLengthAdjustment() {
         return lengthAdjustment;
     }

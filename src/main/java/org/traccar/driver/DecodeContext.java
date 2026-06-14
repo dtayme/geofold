@@ -7,6 +7,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.util.AttributeKey;
 import org.traccar.NetworkMessage;
 import org.traccar.model.Position;
 import org.traccar.session.DeviceSession;
@@ -15,7 +16,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Passed as the second argument to a variant's {@code decode} closure.
@@ -34,6 +37,9 @@ import java.util.List;
  * </pre>
  */
 public final class DecodeContext {
+
+    private static final AttributeKey<Map<String, Object>> CHANNEL_STORE_KEY =
+            AttributeKey.valueOf("driver.channel.store");
 
     private final DriverProtocolDecoder decoder;
     private final Channel channel;
@@ -173,6 +179,25 @@ public final class DecodeContext {
      */
     public String configString(String suffix, String defaultValue) {
         return decoder.configString(driver.getName(), suffix, defaultValue);
+    }
+
+    /**
+     * Returns a mutable, channel-scoped key-value map that persists across decode calls
+     * for the lifetime of the TCP connection. Use this for stateful protocols that need
+     * to accumulate partial data across multiple frames (e.g. photo upload packets).
+     *
+     * <p>When the channel is {@code null} (unit tests without a real channel), each
+     * call returns a fresh throwaway map — state will not persist across calls.
+     */
+    public Map<String, Object> store() {
+        if (channel == null) {
+            return new HashMap<>();
+        }
+        var attr = channel.attr(CHANNEL_STORE_KEY);
+        if (attr.get() == null) {
+            attr.set(new HashMap<>());
+        }
+        return attr.get();
     }
 
     /**

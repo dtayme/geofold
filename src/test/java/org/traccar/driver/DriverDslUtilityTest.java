@@ -13,9 +13,11 @@ import io.netty.handler.codec.http.HttpVersion;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -101,6 +103,35 @@ public class DriverDslUtilityTest {
         assertEquals("/uplink", wrapped.path());
         assertEquals("123", wrapped.param("id"));
         assertTrue(wrapped.jsonObject().getBoolean("ok"));
+    }
+
+    @Test
+    public void frameBufferIndexOfFindsAsciiSubstring() {
+        byte[] data = "GPRMC,imei:123".getBytes(StandardCharsets.US_ASCII);
+        FrameBuffer fb = new FrameBuffer(Unpooled.wrappedBuffer(data));
+
+        assertEquals(0, fb.indexOf("GPRMC"));
+        assertEquals(6, fb.indexOf("imei:"));
+        assertEquals(11, fb.indexOf("123"));
+        assertEquals(-1, fb.indexOf("GNRMC"));
+        assertEquals(6, fb.indexOf("imei:", 5));
+        assertEquals(-1, fb.indexOf("GPRMC", 1));
+    }
+
+    @Test
+    public void channelStoreReturnsUsableMapWhenChannelIsNull() {
+        DecodeContext ctx = new DecodeContext(null, null, null,
+                new DriverDefinition("test"), new VariantDefinition("main"));
+        Map<String, Object> store = ctx.store();
+        assertNotNull(store);
+        store.put("key", 42);
+        assertEquals(42, store.get("key"));
+    }
+
+    @Test
+    public void readUntilAnyRequiresAtLeastTwoTerminators() {
+        assertThrows(IllegalArgumentException.class, () -> FrameSpec.readUntilAny(";"));
+        assertThrows(IllegalArgumentException.class, () -> FrameSpec.readUntilAny());
     }
 
     private DriverDefinition parse(String source) throws Exception {

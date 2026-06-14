@@ -101,6 +101,31 @@ public class DriverFrameDecoder extends ByteToMessageDecoder {
                     buf.skipBytes(1);
                 }
             }
+            case READ_UNTIL_ANY_BYTES -> {
+                byte[][] terms = spec.getTerminators();
+                int bestEnd = -1;
+                int bestTermLen = 0;
+                for (byte[] term : terms) {
+                    int pos = findSequence(buf, term);
+                    if (pos >= 0 && (bestEnd < 0 || pos < bestEnd)) {
+                        bestEnd = pos;
+                        bestTermLen = term.length;
+                    }
+                }
+                if (bestEnd < 0) {
+                    checkCumulationLength(buf, maxFrameLength);
+                    return;
+                }
+                int frameLength = bestEnd - buf.readerIndex();
+                checkFrameLength(frameLength, maxFrameLength);
+                out.add(buf.readRetainedSlice(frameLength));
+                buf.skipBytes(bestTermLen);
+                while (buf.isReadable()
+                        && (buf.getByte(buf.readerIndex()) == '\r'
+                         || buf.getByte(buf.readerIndex()) == '\n')) {
+                    buf.skipBytes(1);
+                }
+            }
             case READ_LINE -> {
                 int end = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '\n');
                 if (end < 0) {

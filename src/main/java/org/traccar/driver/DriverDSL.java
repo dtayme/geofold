@@ -217,6 +217,20 @@ public abstract class DriverDSL extends Script {
         return FrameSpec.readUntilKeep(terminator);
     }
 
+    /**
+     * Text: scan for the first occurrence of any of the given terminators.
+     * The frame ends immediately before the matched terminator (exclusive).
+     * Requires at least two alternatives.
+     *
+     * <p>Example — newline, semicolon, or asterisk all end the frame:
+     * <pre>
+     *   frame readUntilAny("\r\n", "\n", ";", "*")
+     * </pre>
+     */
+    public static FrameSpec readUntilAny(String... terminators) {
+        return FrameSpec.readUntilAny(terminators);
+    }
+
     /** Text: scan for newline, strip trailing CR. */
     public static FrameSpec readLine() {
         return FrameSpec.readLine();

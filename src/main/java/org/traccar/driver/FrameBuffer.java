@@ -67,4 +67,25 @@ public final class FrameBuffer {
     public String ascii(int offset, int length) {
         return buf.toString(base + offset, length, StandardCharsets.US_ASCII);
     }
+
+    /** Returns the first index of the ASCII string {@code ascii} starting at offset 0, or -1. */
+    public int indexOf(String ascii) {
+        return indexOf(ascii, 0);
+    }
+
+    /** Returns the first index of the ASCII string {@code ascii} at or after {@code from}, or -1. */
+    public int indexOf(String ascii, int from) {
+        byte[] pattern = ascii.getBytes(StandardCharsets.US_ASCII);
+        int end = buf.writerIndex() - pattern.length + 1;
+        outer:
+        for (int i = base + from; i < end; i++) {
+            for (int j = 0; j < pattern.length; j++) {
+                if (buf.getByte(i + j) != pattern[j]) {
+                    continue outer;
+                }
+            }
+            return i - base;
+        }
+        return -1;
+    }
 }

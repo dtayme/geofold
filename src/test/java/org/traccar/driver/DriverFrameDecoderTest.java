@@ -24,11 +24,53 @@ import static org.mockito.Mockito.when;
 public class DriverFrameDecoderTest {
 
     @Test
-    public void rejectsNegativeLengthAdjustment() {
-        assertThrows(IllegalArgumentException.class,
-                () -> FrameSpec.readLengthField(2, 2, -1));
-        assertThrows(IllegalArgumentException.class,
-                () -> FrameSpec.readLengthFieldLE(1, 2, -3));
+    public void negativeLengthAdjustmentForTotalLengthEncoding() {
+        // readLengthField(0, 2, -2): the 2-byte field encodes total frame length including itself.
+        // Frame bytes: [0x00, 0x06, 0x01, 0x02, 0x03, 0x04] — field=6, total=0+2+6-2=6
+        DriverRegistry registry = mock(DriverRegistry.class);
+        DriverDefinition driver = new DriverDefinition("test");
+        VariantDefinition variant = new VariantDefinition("main");
+        variant.setFrameByteHint((byte) 0x00);
+        variant.setFrameSpec(FrameSpec.readLengthField(0, 2, -2));
+        driver.addVariant(variant);
+        when(registry.all()).thenReturn(List.of(driver));
+
+        EmbeddedChannel channel = new EmbeddedChannel(new DriverFrameDecoder(registry, 8192));
+
+        assertTrue(channel.writeInbound(Unpooled.wrappedBuffer(
+                new byte[] {0x00, 0x06, 0x01, 0x02, 0x03, 0x04})));
+        ByteBuf frame = channel.readInbound();
+        assertEquals(6, frame.readableBytes());
+
+        frame.release();
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    public void readsUntilFirstMatchingTerminator() {
+        DriverRegistry registry = mock(DriverRegistry.class);
+        DriverDefinition driver = new DriverDefinition("test");
+        VariantDefinition variant = new VariantDefinition("main");
+        variant.setFrameSpec(FrameSpec.readUntilAny("\r\n", ";", "*"));
+        driver.addVariant(variant);
+        when(registry.all()).thenReturn(List.of(driver));
+
+        EmbeddedChannel channel = new EmbeddedChannel(new DriverFrameDecoder(registry, 8192));
+
+        // ";" comes first — frame is "abc", then "def" ends at "*", then "ghi" ends at "\r\n"
+        assertTrue(channel.writeInbound(
+                Unpooled.copiedBuffer("abc;def*ghi\r\n", StandardCharsets.US_ASCII)));
+        ByteBuf f1 = channel.readInbound();
+        ByteBuf f2 = channel.readInbound();
+        ByteBuf f3 = channel.readInbound();
+        assertEquals("abc", f1.toString(StandardCharsets.US_ASCII));
+        assertEquals("def", f2.toString(StandardCharsets.US_ASCII));
+        assertEquals("ghi", f3.toString(StandardCharsets.US_ASCII));
+
+        f1.release();
+        f2.release();
+        f3.release();
+        channel.finishAndReleaseAll();
     }
 
     @Test
