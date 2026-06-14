@@ -120,6 +120,10 @@ frame readUntil('##')
 // Keep the terminator in the string passed to decode.
 frame readUntilKeep('##')
 
+// Read until the FIRST matching terminator from a set (requires ≥ 2 alternatives).
+// The frame ends immediately before the matched terminator (exclusive).
+frame readUntilAny("\r\n", ";", "*")
+
 // Read until newline (\n); strip trailing \r if present.
 frame readLine()
 
@@ -183,7 +187,7 @@ frame 0x55 as byte, { fb ->
 
 `fieldWidth` must be 1, 2, or 4 bytes.
 
-`lengthAdjustment` must be non-negative. Use a positive adjustment for checksum bytes that follow the body; omit it (or pass 0) when the length field value already accounts for the full remaining frame.
+`lengthAdjustment` may be positive, zero, or **negative**. A positive adjustment adds extra bytes after the body (e.g. a checksum not counted in the length field). A negative adjustment handles protocols where the length field encodes the total frame length including itself: `readLengthField(0, 2, -2)` reads a 2-byte total-length field and produces exactly that many bytes in the frame.
 
 ### Maximum frame length
 
@@ -330,6 +334,7 @@ Must return a `Position` object or `null`.
 | `ctx.configInt(suffix, default)` | Reads an integer protocol config key for this driver, such as `ctx.configInt('mask', 0)` reading `skypatrol.mask`. |
 | `ctx.configBoolean(suffix, default)` | Reads a boolean protocol config key for this driver. |
 | `ctx.configString(suffix, default)` | Reads a string protocol config key for this driver. |
+| `ctx.store()` | Returns a mutable `Map<String, Object>` that persists for the lifetime of the TCP connection. Use it to accumulate state across frames (e.g. storing an IMEI from a login message for subsequent data messages). Returns a fresh throwaway map in unit tests where no real channel exists. |
 | `ctx.deviceAttrs(session)` | Returns a [`DeviceAttrs`](#per-device-lookups) for the session's device. |
 
 The config helper suffix may include or omit the leading dot. For a driver named
@@ -618,6 +623,7 @@ current frame candidate and do not advance the stream.
 | `fb.getUShort(index)` / `fb.getUShortLE(index)` | `int` | Peek two bytes |
 | `fb.getUInt(index)` / `fb.getUIntLE(index)` | `long` | Peek four bytes |
 | `fb.indexOf(value)` / `fb.indexOf(value, from)` | `int` | Relative offset of a byte value, or `-1` |
+| `fb.indexOf(ascii)` / `fb.indexOf(ascii, from)` | `int` | Relative offset of an ASCII substring, or `-1` |
 | `fb.bytes(offset, n)` | `byte[]` | Copy raw bytes |
 | `fb.ascii(offset, n)` | `String` | Copy bytes as US-ASCII |
 

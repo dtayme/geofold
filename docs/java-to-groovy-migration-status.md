@@ -5,7 +5,7 @@ Copyright (C) 2026 FOGNETX <Drew.Taylor@fognetx.com>
 
 # Java To Groovy Protocol Migration Status
 
-Status date: 2026-06-12
+Status date: 2026-06-14
 
 The migration goal is feature-complete Groovy protocol coverage from source
 documentation, with archived Java parity used only as supporting evidence.
@@ -14,6 +14,8 @@ documentation, with archived Java parity used only as supporting evidence.
 
 | Protocol | Result |
 | --- | --- |
+| `easytrack` | Migrated to `drivers/easytrack.groovy`, backed by Java-parity test fixtures (OBD, cell-tower, location, E3+4G model variants, TX/MQ echo suppression). Java source, encoder, and old Java protocol tests moved to `archived-protocols/easytrack/`. Requires DSL extension: `session.model` for model-aware decode. |
+| `wialon` | Migrated to `drivers/wialon.groovy` covering L/P/D/SD/B/M message types, outer IMEI prefix stripping, full/short position patterns with NA fallback, extended param block (type:1/2/3 params, bat/temp remapping, cell towers up to 9 towers), batch with `KEY_ARCHIVE`, and 4 commands. Java source, encoder, and old Java protocol test moved to `archived-protocols/wialon/`. Uses `ctx.store()` for IMEI persistence after login. |
 | `cartrack` | Migrated to `drivers/cartrack.groovy`, backed by the downloaded CarTrack GTP PDF, driver decode tests, command-declaration tests, and command encoder tests. Java source and old Java protocol test moved to `archived-protocols/cartrack/`. |
 | `cityeasy` | Migrated to `drivers/cityeasy.groovy`, backed by the downloaded Cityeasy protocol PDF, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol test moved to `archived-protocols/cityeasy/`. |
 | `enfora` | Migrated to `drivers/enfora.groovy`, backed by the downloaded Enfora API and Mini-MT PDFs, driver decode tests, command-declaration tests, and command encoder tests. Java source, encoder, and old Java protocol test moved to `archived-protocols/enfora/`. |

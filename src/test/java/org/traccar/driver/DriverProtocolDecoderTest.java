@@ -1125,6 +1125,78 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
         verifyNull(decoder, text("*HQ,123456789012345,V4,,20260612010203"));
     }
 
+    @Test
+    public void testEasytrackDecode() throws Exception {
+        var decoder = decoder("easytrack");
+
+        // OBD report
+        verifyAttributes(decoder, text(
+                "*ET,358162092884226,OB,BD$V13.6;R01510;S023;P034.9;O035.2;C085;L000.0;XM035.170;M4.25;F001.197;T0000730;A09;B00;D00;GX0;GY0;GZ0;"));
+
+        // Cell-tower fallback
+        verifyNotNull(decoder, text(
+                "*ET,354522180593498,JZ,0,20222,262,724,4#"));
+
+        // TX message → null (echo only)
+        verifyNull(decoder, text(
+                "*ET,354522180045564,TX,V,14070E,122336"));
+
+        // Location report with position
+        verifyPosition(decoder, text(
+                "*ET,135790246811221,DW,A,0A090D,101C0D,00CF27C6,0413FA4E,0000,0000,00000000,20,4,0000,00F123"),
+                position("2010-09-13 16:28:13.000", true, 22.62689, 114.03021));
+
+        // Location report without extended fields
+        verifyPosition(decoder, text(
+                "*ET,135790246811221,HB,A,050915,0C2A27,00CE5954,04132263,0000,F000,01000000,20,4,0000,00F123,100,4845423835,0091564212,0B45,10.00,9"));
+    }
+
+    @Test
+    public void testEasytrackDecodeE3() throws Exception {
+        var decoder = decoder("easytrack", new Config(), "E3+4G");
+
+        // E3+4G model: hours field instead of driver ID
+        verifyAttribute(decoder, text(
+                "*ET,135790246811221,DW,A,180709,16081C,80D74F8D,81ACFAD6,04B0,1C20,00800000,23,0,0348,004491,725,0000000000,00181A8C,0DAC,13.41,15"),
+                Position.KEY_HOURS, 94779600000L);
+    }
+
+    @Test
+    public void testWialonDecode() throws Exception {
+        var decoder = decoder("wialon");
+
+        // Heartbeat → null
+        verifyNull(decoder, text(
+                "#P#"));
+
+        // SD with outer IMEI (store not available in unit test)
+        verifyPosition(decoder, text(
+                "99999999#SD#270413;205601;5544.6025;N;03739.6834;E;1;2;3;4"),
+                position("2013-04-27 20:56:01.000", true, 55.74338, 37.66139));
+
+        // Full data with outer IMEI + extended fields
+        verifyPosition(decoder, text(
+                "99999999#D#151216;135910;5321.1466;N;04441.7929;E;87;156;265.000000;12;1.000000;241;NA;NA;NA;odo:2:0.000000,total_fuel:1:430087,can_fls:1:201,can_taho:1:11623,can_mileage:1:140367515"));
+
+        // Full data with counter.version prefix + outer IMEI
+        verifyPosition(decoder, text(
+                "2.0;99999999#D#101118;061143;0756.0930;N;12338.6403;E;18.223;99.766;-4.000;10;0.800;NA;NA;NA;NA;101_521347:1:521249,101_521126:1:6593598,101_521127:1:774780,101_521072_21.1:1:0,101_521072_21.2:1:71353;F24A"));
+
+        // Batch messages with outer IMEI (archive flag)
+        verifyPositions(decoder, text(
+                "99999999#B#080914;073235;5027.50625;N;03026.19321;E;0.700;0.000;NA;4;NA;NA;NA;;NA;|080914;073420;5027.50845;N;03026.18854;E;1.996;292.540;NA;4;NA;NA;NA;;NA;"));
+
+        // boolean param
+        verifyAttribute(decoder, text(
+                "99999999#D#120319;112003;NA;NA;NA;NA;0.000;NA;NA;0;NA;NA;NA;NA;NA;motion:3:false"),
+                "motion", false);
+
+        // bat/temp remapping
+        verifyAttribute(decoder, text(
+                "99999999#D#NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;NA;;NA;SOS:1:0,temp:3:18,bat:3:99"),
+                Position.KEY_BATTERY_LEVEL, 99);
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());
