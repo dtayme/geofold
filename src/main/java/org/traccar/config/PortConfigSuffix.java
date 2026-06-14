@@ -55,7 +55,6 @@ import org.traccar.protocol.TzoneProtocol;
 import org.traccar.protocol.UlbotechProtocol;
 import org.traccar.protocol.WatchProtocol;
 import org.traccar.protocol.Xexun2Protocol;
-import org.traccar.protocol.XexunProtocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +73,7 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(Tk103Protocol.class, 5002);
         put(Gl200Protocol.class, 5004);
         put(T55Protocol.class, 5005);
-        put(XexunProtocol.class, 5006);
+
         put(TotemProtocol.class, 5007);
         put(MeiligaoProtocol.class, 5009);
         put(SuntechProtocol.class, 5011);

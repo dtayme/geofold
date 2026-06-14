@@ -1321,6 +1321,49 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 "8000853eb000b8000101fcff032f14665a89e2564176656e7369732053797353657276653a2049676e6974696f6e206f6e2064657465637465642c206d6f76696e672c20302e3135206b6d205357206f66204261626120416e696d61736861756e205374726565742d426f64652054686f6d61732053742e2c20537572756c6572652c204c61676f7320436974792c204e472c20362e34383736352c20332e33343735352c2031303a3031204d6172203131202020454f46"));
     }
 
+    @Test
+    public void testXexunDecode() throws Exception {
+        var decoder = decoder("xexun");
+
+        // Basic mode — edge case: position at origin with no date/time
+        verifyAttributes(decoder, text(
+                "GPRMC,.000,A,0.000000,S,0.0000,W,0.00,0.00,,00,0000.0,A*55,L,,imei:353579010727036,"));
+
+        // Basic mode — South lat, East lon, expected coordinates
+        verifyPosition(decoder, text(
+                "GPRMC,150120.000,A,3346.4463,S,15057.3083,E,0.0,117.4,010911,,,A*76,F,imei:351525010943661,"),
+                position("2011-09-01 15:01:20.000", true, -33.77411, 150.95514));
+
+        // Basic mode — embedded \r\n between NMEA checksum and signal field
+        verifyPosition(decoder, text(
+                "GPRMC,121535.000,A,5417.2666,N,04822.1264,E,1.452,30.42,031014,0.0,A*4D\r\n,L,imei:355227042011730,"));
+
+        // Basic mode — GNRMC variant, space before imei
+        verifyPosition(decoder, text(
+                "GNRMC,134418.000,A,5533.8973,N,03745.4398,E,0.00,308.85,160215,,,A*7A,F,, imei:864244028033115,"));
+
+        // Basic mode — empty course field
+        verifyPosition(decoder, text(
+                "GPRMC,233842.000,A,5001.3060,N,01429.3243,E,0.00,,210211,,,A*74,F,imei:354776030495631,"));
+
+        // Full mode — serial + phone prefix, sats/alt/power suffix, expected coordinates
+        verifyPosition(decoder, text(
+                "130302125349,+79604870506,GPRMC,085349.000,A,4503.2392,N,03858.5660,E,6.95,154.65,020313,,,A*6C,F,, imei:012207007744243,03,-1.5,F:4.15V,1,139,28048,250,01,278A,5072"),
+                position("2013-03-02 08:53:49.000", true, 45.05399, 38.97610));
+
+        // Full mode — ACCStart alarm → ignition on
+        verifyPosition(decoder, text(
+                "171007160505,,GPRMC,160505.000,A,5323.4680,N,00252.4202,W,000.0,129.7,071017,,,A*7A,F,ACCStart, imei:864504031916915,10,41.1,F:4.28V,1,135,19824,234,15,0062,B7D5"));
+
+        // Full mode — "help me!" alarm → SOS
+        verifyPosition(decoder, text(
+                "111111120009,+436763737552,GPRMC,120600.000,A,6000.0000,N,13000.0000,E,0.00,0.00,010112,,,A*68,F,help me!, imei:123456789012345,04,481.2,F:4.15V,0,139,2689,232,03,2725,0576"));
+
+        // verifyNull — no GPRMC/GNRMC in message
+        verifyNull(decoder, text(
+                ",+48606717068,,L,, imei:012207005047292,,,F:4.28V,1,52,11565,247,01,000E,1FC5"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

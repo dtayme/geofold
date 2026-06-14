@@ -36,9 +36,11 @@ documentation, with archived Java parity used only as supporting evidence.
 | `minifinder` | Migrated to `drivers/minifinder.groovy` covering `;`-terminated text framing, channel-session login (`!1`), message types !3/!4/!5/!A/!B/!C/!D, flag-word decoding (validity/alarms/RSSI/charge), and 11 commands (timezone, voice-monitoring, speed/geofence/vibration/fall alarms, AGPS, power-saving/deep-sleep modes, SOS number, indicator). Java source, encoder, and old Java protocol tests moved to `archived-protocols/minifinder/`. |
 | `tramigo` | Migrated to `drivers/tramigo.groovy` covering scripted-frame detection (type-dependent LE/BE length field), three protocol variants (0x01 fixed-binary position, 0x04 TLV-loop with CRC16-CCITT ACK, 0x80 binary-header + ASCII-text with regex coordinate/direction/time parsing). Java source, frame decoder, and old Java protocol test moved to `archived-protocols/tramigo/`. |
 
+| `xexun` | Migrated to `drivers/xexun.groovy` covering scriptedFrame with `FrameBuffer.indexOf(String)` for GPRMC/GNRMC scan, NMEA coordinate parsing via lazy `(\d*?)(\d?\d\.\d+)` groups, both basic and full deployment modes (serial/phone prefix, sats/alt/power suffix), alarm/ignition mapping, and 2 commands (ENGINE_STOP, ENGINE_RESUME). Java source, frame decoder, encoder, and old Java protocol tests moved to `archived-protocols/xexun/`. |
+
 ## Remaining Active Java Protocols
 
-49 documented, official, or alias-documented Java protocol implementations
+48 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
