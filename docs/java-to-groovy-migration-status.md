@@ -40,9 +40,11 @@ documentation, with archived Java parity used only as supporting evidence.
 
 | `jmak` | Migrated to `drivers/jmak.groovy` covering three frame types on the same port (balanced-brace JSON `{…}`, `^…$` keep-alive, `~…$` position), 64-bit mask-based field parsing in decodeEvent (bits 0–34 via `BitUtil.check`), CAN/OBD section in decodeCan (bits 0–14), ACK "ACK" for all types, driver ID from eventId/eventStatus combo (126/4), and IO bitmask decode. Java source, frame decoder, and old Java protocol tests moved to `archived-protocols/jmak/`. |
 
+| `navigil` | Migrated to `drivers/navigil.groovy` covering scriptedFrame with optional 4-byte preamble detection (LE 0x2477F5F6), length field at byte-offset 6, GPS-to-UTC leap-second correction (−25 s), CRC-16/CCITT-FALSE ACK when flags bit 0 is clear, and 6 message types: MSG_UNIT_REPORT (8), MSG_TG2_REPORT (12), MSG_POSITION_REPORT (13, 3-byte MediumLE coords), MSG_POSITION_REPORT_2 (15), MSG_SNAPSHOT4 (17), MSG_TRACKING_DATA (18). Java source, frame decoder, and old Java protocol tests moved to `archived-protocols/navigil/`. |
+
 ## Remaining Active Java Protocols
 
-47 documented, official, or alias-documented Java protocol implementations
+46 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the

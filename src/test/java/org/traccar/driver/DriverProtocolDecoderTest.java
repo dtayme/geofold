@@ -1322,6 +1322,19 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
     }
 
     @Test
+    public void testNavigilDecode() throws Exception {
+        var decoder = decoder("navigil");
+
+        // MSG_INDICATION (msgId=4) → null
+        verifyNull(decoder, binary(
+                "01004300040020000000f60203080200e7cd0f510c0000003b00000000000000"));
+
+        // MSG_POSITION_REPORT_2 (msgId=15) → valid position
+        verifyPosition(decoder, binary(
+                "0100b3000f0024000000f4a803080200ca0c1151ef8885f0b82e6d130400c00403000000"));
+    }
+
+    @Test
     public void testJmakDecode() throws Exception {
         var decoder = decoder("jmak");
 
