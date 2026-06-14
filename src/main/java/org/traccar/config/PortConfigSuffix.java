@@ -51,7 +51,6 @@ import org.traccar.protocol.TeltonikaProtocol;
 import org.traccar.protocol.Tk103Protocol;
 import org.traccar.protocol.TopinProtocol;
 import org.traccar.protocol.TotemProtocol;
-import org.traccar.protocol.TramigoProtocol;
 import org.traccar.protocol.TzoneProtocol;
 import org.traccar.protocol.UlbotechProtocol;
 import org.traccar.protocol.WatchProtocol;
@@ -97,7 +96,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(OsmAndProtocol.class, 5055);
         put(EelinkProtocol.class, 5064);
         put(UlbotechProtocol.class, 5072);
-        put(TramigoProtocol.class, 5073);
         put(BceProtocol.class, 5080);
         put(CastelProtocol.class, 5086);
         put(WatchProtocol.class, 5093);
