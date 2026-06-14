@@ -38,9 +38,11 @@ documentation, with archived Java parity used only as supporting evidence.
 
 | `xexun` | Migrated to `drivers/xexun.groovy` covering scriptedFrame with `FrameBuffer.indexOf(String)` for GPRMC/GNRMC scan, NMEA coordinate parsing via lazy `(\d*?)(\d?\d\.\d+)` groups, both basic and full deployment modes (serial/phone prefix, sats/alt/power suffix), alarm/ignition mapping, and 2 commands (ENGINE_STOP, ENGINE_RESUME). Java source, frame decoder, encoder, and old Java protocol tests moved to `archived-protocols/xexun/`. |
 
+| `jmak` | Migrated to `drivers/jmak.groovy` covering three frame types on the same port (balanced-brace JSON `{…}`, `^…$` keep-alive, `~…$` position), 64-bit mask-based field parsing in decodeEvent (bits 0–34 via `BitUtil.check`), CAN/OBD section in decodeCan (bits 0–14), ACK "ACK" for all types, driver ID from eventId/eventStatus combo (126/4), and IO bitmask decode. Java source, frame decoder, and old Java protocol tests moved to `archived-protocols/jmak/`. |
+
 ## Remaining Active Java Protocols
 
-48 documented, official, or alias-documented Java protocol implementations
+47 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the

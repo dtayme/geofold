@@ -32,7 +32,6 @@ import org.traccar.protocol.GlobalstarProtocol;
 import org.traccar.protocol.Gps103Protocol;
 import org.traccar.protocol.Gt06Protocol;
 import org.traccar.protocol.HuaShengProtocol;
-import org.traccar.protocol.JmakProtocol;
 import org.traccar.protocol.Jt600Protocol;
 import org.traccar.protocol.Jt808Protocol;
 import org.traccar.protocol.MegastekProtocol;
@@ -105,7 +104,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(TopinProtocol.class, 5199);
         put(StartekProtocol.class, 5222);
         put(Xexun2Protocol.class, 5233);
-        put(JmakProtocol.class, 5259);
     }
 
     PortConfigSuffix(String key, List<KeyType> types) {
