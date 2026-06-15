@@ -1687,6 +1687,110 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 "[3G*8800000015*00DD*UD,010120,025946,V,0.0,N,0.0,E,22.0,0,-1,0,100,98,0,0,00000000,0,5,eduroam,f4:db:e6:d2:a8:00,-53,eduroam,f4:db:e6:da:d0:80,-79,eduroam,78:0c:f0:24:f9:80,-82,Lions,b0:be:76:0a:05:9a,-82,tubs-guest,f4:db:e6:d2:a8:01,-53,0.0]"));
     }
 
+    @Test
+    public void testMegastekDecode() throws Exception {
+        var decoder = decoder("megastek");
+
+        // New format with WiFi and binary I/O
+        verifyPosition(decoder, text(
+                "0323$MGV002,861045082971493,,R,090126,134250,V,5231.64780,N,01323.48837,E,00,00,00,7.682,0.227,116.709,42.5,,262,01,5D8,1922400,20,0000,0000,0,,,,,,01,092,Timer,0268eb529865:50|3ca62f1ff798:63|b8bef41b75a0:64|1ced6f4ad291:72|b4f267537963:76|d2f267537963:76|58d7599127f8:82|32cda7ad09f3:83|485d35090af8:87|b0fc88ab407e:88,,0,,;!"));
+
+        // Battery level 100
+        verifyAttribute(decoder, text(
+                "$MGV002,862311065582635,,R,311025,144117,V,5231.64099,N,01323.47200,E,00,00,00,99.9,,,25.7,,262,01,05D8,1924F03,18,,,,,,,,,10,100,Timer,32cda7ad09f3:42|1ced6f4ad291:47|b4f267537963:69|d2f267537963:70|3ca62f1ff798:73|04b4fe4955c7:75|74427f7dce16:77|ea55a82da860:80|30d32d9aec05:82|f086201d99ba:82,,0,,;!"),
+                Position.KEY_BATTERY_LEVEL, 100);
+
+        // New format archive (S flag)
+        verifyPosition(decoder, text(
+                "$MGV002,860719020193193,,S,050123,054156,V,2238.26167,N,11401.99217,E,00,00,00,99.9,,,,,460,08,262C,FFC,15,,,,,,,,,100,100,Timer,bc5ff67daf8f:38|9289179f1d46:46|0071cc32f67f:59|a41a3a6ab665:72|ec26ca48faa5:72|a61a3a5ab665:73|fcd733e2c310:75|48a74e34ac58:85|3436543ec64e:85|c8bf4c074f92:87,;!"));
+
+        // Length-prefix with battery
+        verifyAttribute(decoder, text(
+                "0226$MGV002,860537065044539,,S,020824,120719,V,5339.11529,N,01011.15575,E,00,00,00,99.9,3.255,,52.1,,262,01,FFFE,277A602,14,000,0000,0000,0,,,,,01000,078,Timer,dc15c8984804:65|50e63698d1d5:70|44053fdacd6e:73|e0516314f2a7:88,,0,,;!"),
+                Position.KEY_BATTERY_LEVEL, 78);
+
+        // Sparse fields (many empty)
+        verifyPosition(decoder, text(
+                "$MGV002,860719020193193,,S,070521,160748,V,2255.09165,N,11404.01322,E,00,00,00,,,,,,,,,,,,,,,,,,,10,015,Restart;!"));
+
+        // No IO block (all empty after gsm)
+        verifyPosition(decoder, text(
+                "$MGV002,860719020193193,,R,070621,115717,V,2255.09165,N,11404.01322,E,00,00,00,99.9,,,,,460,07,262C,0F54,20,,,,,,,,,10,039,Timer;!"));
+
+        // With temperatures
+        verifyPosition(decoder, text(
+                "0125$MGV002,860719020193193,DeviceName,R,240214,104742,A,2238.20471,N,11401.97967,E,00,03,00,1.20,0.462,356.23,137.9,1.5,460,07,262C,0F54,25,0000,0000,0,0,0,28.5,28.3,,,100,Timer;"));
+
+        // charge=true
+        verifyAttribute(decoder, text(
+                "$MGV002,860719020193193,DeviceName,R,240214,104742,A,2238.20471,N,11401.97967,E,00,03,00,1.20,0.462,356.23,137.9,1.5,460,07,262C,0F54,25,0000,0000,0,0,0,28.5,28.3,,10,100,Timer;!"),
+                Position.KEY_CHARGE, true);
+
+        // belt=2
+        verifyAttribute(decoder, text(
+                "$MGV002,860719020193193,DeviceName,R,240214,104742,A,2238.20471,N,11401.97967,E,00,03,00,1.20,0.462,356.23,137.9,1.5,460,07,262C,0F54,25,0000,0000,0,0,0,28.5,28.3,,02,100,Timer;!"),
+                "belt", 2);
+
+        // Confirmed position and coordinates
+        verifyPosition(decoder, text(
+                "$MGV002,860719020193193,DeviceName,R,240214,104742,A,2238.20471,N,11401.97967,E,00,03,00,1.20,0.462,356.23,137.9,1.5,460,07,262C,0F54,25,0000,0000,0,0,0,28.5,28.3,,,100,Timer;!"),
+                position("2014-02-24 10:47:42.000", true, 22.63675, 114.03299));
+
+        // Empty lat/lon → null
+        verifyNull(decoder, text(
+                "0112$MGV002,,GVT900-3,S,010114,000003,,,,,,00,00,00,,0.000,0.00,,0.0,,,,,,0000,0000,14,10,0, , ,,1-0,0,Low Ext Vol;!"));
+
+        // Empty lat/lon → null
+        verifyNull(decoder, text(
+                "0140$MGV002,354550056642321,GVT900-3,S,300917,071731,V,,,,,00,00,00,99.9,0.000,0.00,,0.0,457,01,0741,00CD,,0000,0000,20,10,0, , ,,1-1,94,PW ON;!"));
+
+        // ALARM_POWER_ON
+        verifyAttribute(decoder, text(
+                "$MGV002,869152024446923,,S,290816,200627,V,5056.21059,N,00439.25034,E,00,00,00,99.9,,,-25.1,,206,01,0BBB,4418,28,,,,,,,,,01,093,PW ON;"),
+                Position.KEY_ALARM, Position.ALARM_POWER_ON);
+
+        // Simple old format — Belt Up alarm, imei in status
+        verifyPosition(decoder, text(
+                "STX,013950007137061,$GPRMC,191959.000,A,5203.09602,N,00830.77057,E,5.73,255.27,240716,,,A*62,L,Belt Up,imei:013950007137061,0/5,,Battery=52%,,1,262,03,0084,B20E;FD"));
+
+        // Simple old format — Nil-Alarms
+        verifyPosition(decoder, text(
+                "STX,865067021328417,$GPRMC,064721.000,A,4241.2793,N,02321.9762,E,6.74,346.90,300316,,,1*CA,F,Nil-Alarms,imei:865067021328417,9,559.8,Battery=82%,0,284,03,047E,2B5F;99"));
+
+        // Non-simple old format (16-char id + 2-byte separator)
+        verifyPosition(decoder, text(
+                "STX2010101801      j$GPRMC,101053.000,A,2232.7607,N,11404.7669,E,0.00,,231110,,,A*7F,460,00,2795,0E6A,14,94,1000,0000,91,Timer;1D"));
+
+        // Simple old format — imei with optional fields
+        verifyPosition(decoder, text(
+                "STX,861001005215757,$GPRMC,180118.000,A,4241.330116,N,2321.931251,E,0.00,182.19,130915,,E,A,F,Nil-Alarms,imei:861001005215757,8,577.0,Battery=38%,0,284,03,03E8,3139;7A"));
+
+        // Simple old format — minimal (no status section)
+        verifyPosition(decoder, text(
+                "STX,865067020439090,$GPRMC,171013.000,A,5919.1411,N,01804.1681,E,0.000,294.41,140815,,,A"));
+
+        // Simple old format — GerAL22 id, imei in status
+        verifyPosition(decoder, text(
+                "STX,GerAL22,$GPRMC,174752.000,A,3637.060059,S,6416.2354,W,0.00,0.00,030812,,,A*55,F,,imei:861785000249353,05,180.6,Battery=100%,,1,722,310,0FA6,39D0;8F"));
+
+        // Simple old format — LOGSTX prefix, empty alarm
+        verifyPosition(decoder, text(
+                "LOGSTX,123456789012345,$GPRMC,225419.000,A,3841.82201,N,09494.73357,W,12.46,135.33,270914,,,A*47,F,,imei:123456789012345,0/6,,Battery=100%,,0,,,5856,78A3;24"));
+
+        // Non-simple — alternative status
+        verifyPosition(decoder, text(
+                "STX863070014949464   $GPRMC,215942.290,A,4200.1831,N,02128.5904,E,003.1,079.8,090813,,,A*6E,294,02,0064,0F3D,18,17,0000,000000,0000,0.00,0.02,0.00,Store;D8"));
+
+        // Non-simple — short id
+        verifyPosition(decoder, text(
+                "STX123456            $GPRMC,063709.000,A,2238.1998,N,11401.9670,E,0.00,,250313,,,A*7F,460,01,2531,647E,11,87,1000,001001,0000,0.00,0.02,0.00,Timer;4A"));
+
+        // Simple — SOS (Help)
+        verifyAttribute(decoder, text(
+                "STX,,$GPRMC,001339.000,A,4710.85395,N,02733.58209,E,1.65,238.00,010109,,,A*67,L,Help,imei:013227009737796,0/8,137.1,Battery=100%,,0,226,01,2B9B,BBBF;8D"),
+                Position.KEY_ALARM, Position.ALARM_SOS);
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

@@ -32,7 +32,6 @@ import org.traccar.protocol.Gps103Protocol;
 import org.traccar.protocol.Gt06Protocol;
 import org.traccar.protocol.Jt600Protocol;
 import org.traccar.protocol.Jt808Protocol;
-import org.traccar.protocol.MegastekProtocol;
 import org.traccar.protocol.MeiligaoProtocol;
 import org.traccar.protocol.MeitrackProtocol;
 import org.traccar.protocol.Minifinder2Protocol;
@@ -75,7 +74,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(NavisProtocol.class, 5019);
         put(MeitrackProtocol.class, 5020);
         put(Gt06Protocol.class, 5023);
-        put(MegastekProtocol.class, 5024);
         put(TeltonikaProtocol.class, 5027);
         put(Mta6Protocol.class, 5028);
         put(TzoneProtocol.class, 5029);
