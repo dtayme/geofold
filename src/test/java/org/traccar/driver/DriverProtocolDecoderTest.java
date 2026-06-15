@@ -1400,6 +1400,40 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 ",+48606717068,,L,, imei:012207005047292,,,F:4.28V,1,52,11565,247,01,000E,1FC5"));
     }
 
+    @Test
+    public void testStartekDecode() throws Exception {
+        var decoder = decoder("startek");
+
+        // Basic position (no extended fields)
+        verifyPosition(decoder, text(
+                "&&l141,863911061945394,000,0,,230918072531,A,22.678598,114.045970,26,0.6,0,0,74,2286304571,460|0|249F|00001093,20,001C,00,00,04A7|019C|0000|0000,1,C0\r\n"));
+
+        // Event 53 → KEY_DRIVER_UNIQUE_ID from eventData field
+        verifyAttribute(decoder, text(
+                "&&a152,860262050010565,000,53,8F5300,210528015706,A,-38.229746,145.043446,6,1.5,0,285,84,2102994,505|1|306E|082D6101,31,0000003D,02,02,04C0|01A0|0000|0000,1,,DC\r\n"),
+                Position.KEY_DRIVER_UNIQUE_ID, "8F5300");
+
+        // Driver ID from long field (event 0, 20+ char driver ID)
+        verifyAttribute(decoder, text(
+                "&&L171,868825064282040,000,0,,241209063302,A,13.809656,100.558255,14,0.9,0,0,67,1560,520|4|A418|008AAC3F,31,000000BD,02,00,04E3|0171|0000|0000,131,,,,3100  1  61000541  10800  ?FE\r\n"),
+                Position.KEY_DRIVER_UNIQUE_ID, "3100  1  61000541  10800  ?");
+
+        // OBD fields — verify KEY_FUEL_CONSUMPTION
+        verifyAttribute(decoder, text(
+                "&&x164,869926040743375,000,0,,220705205955,A,33.326001,44.445318,10,1.2,0,57,8,925,418|40|038C|000083CD,31,00000015,00,00,0016|016A|0000|0000,1,,,686|33||44|99|14|124|11|8D\r\n"),
+                Position.KEY_FUEL_CONSUMPTION, 1.1);
+
+        // Hours field
+        verifyAttribute(decoder, text(
+                "&&s148,868703050178631,000,37,,230704040211,A,22.678565,114.046011,31,0.5,0,339,77,8,460|0|249F|0AC2620D,27,0000001D,02,00,04F2|01A1|0000|0000,129,,,,949037\r\n"),
+                Position.KEY_HOURS, 9490000L);
+
+        // Default type → KEY_RESULT
+        verifyAttribute(decoder, text(
+                "&&:23,860262050015424,129,OKA2\r\n"),
+                Position.KEY_RESULT, "OK");
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

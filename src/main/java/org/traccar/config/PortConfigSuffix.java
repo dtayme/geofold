@@ -42,7 +42,6 @@ import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.protocol.RuptelaProtocol;
-import org.traccar.protocol.StartekProtocol;
 import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.TeltonikaProtocol;
@@ -100,7 +99,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(GlobalstarProtocol.class, 5185);
         put(Minifinder2Protocol.class, 5187);
         put(TopinProtocol.class, 5199);
-        put(StartekProtocol.class, 5222);
         put(Xexun2Protocol.class, 5233);
     }
 
