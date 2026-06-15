@@ -1924,6 +1924,70 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 "imei:123451234512345,L,*"));
     }
 
+    @Test
+    public void testTopinDecode() throws Exception {
+        var decoder = decoder("topin");
+
+        // Login — null, registers session
+        verifyNull(decoder, binary(
+                "78780d0103593390754169634d0d0a"));
+
+        // MSG_VIBRATION (0x94) — vibration alarm
+        verifyAttribute(decoder, binary(
+                "787801940D0A"),
+                Position.KEY_ALARM, Position.ALARM_VIBRATION);
+
+        // MSG_SOS_ALARM (0x99) — SOS alarm
+        verifyAttribute(decoder, binary(
+                "787801990D0A"),
+                Position.KEY_ALARM, Position.ALARM_SOS);
+
+        // MSG_STATUS (0x13) — battery, fw, rssi, charge
+        verifyAttributes(decoder, binary(
+                "78780A13424008196400041F000D0A"));
+
+        // MSG_GPS (0x10) — full position
+        verifyPosition(decoder, binary(
+                "787812100A03170F32179C026B3F3E0C22AD651F34600D0A"));
+
+        // MSG_GPS_2 (0x08) — valid position with custom coordinate encoding
+        verifyPosition(decoder, binary(
+                "7878200813081A0733211608C8D1710DED1D1608DFFB710E06D51039050100286489000D0A"));
+
+        // MSG_GPS_OFFLINE_2 (0x09) — invalid fix
+        verifyPosition(decoder, binary(
+                "78782008140709121f36300d769f02058cfd300d771202058c6f0000000300005c99000d0a"));
+
+        // MSG_GPS repeated (same port, second position)
+        verifyPosition(decoder, binary(
+                "787812100a03170f32179c026b3f3e0c22ad651f34600d0a"));
+
+        // MSG_STATUS (0x13) — second variant with fewer optional fields
+        verifyAttributes(decoder, binary(
+                "78780713514d0819640d0a"));
+
+        // MSG_TIME_UPDATE (0x30) — no position
+        verifyNull(decoder, binary(
+                "787801300d0a"));
+
+        // MSG_WIFI (0x69) — BCD time, 0 APs, 2 cells, alarm=vibration
+        verifyAttribute(decoder, binary(
+                "7878006921120412565802010601071e4a9764071e4a9864010d0a"),
+                Position.KEY_ALARM, Position.ALARM_VIBRATION);
+
+        // MSG_WIFI_OFFLINE (0x17) — BCD time, 0 APs, multiple cells, no alarm
+        verifyNotNull(decoder, binary(
+                "7878001719111120141807019456465111aa3c465111ab464651c1a550465106b150465342f750465342f65a465111a95a000d0a"));
+
+        // Empty frame — null (frame too short)
+        verifyNull(decoder, binary(
+                "787801080D0A"));
+
+        // MSG_STATUS (0x13) — short variant with only 4 status bytes
+        verifyAttributes(decoder, binary(
+                "78780a132827010063000000000d0a"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

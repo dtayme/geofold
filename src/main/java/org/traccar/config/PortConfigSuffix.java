@@ -42,7 +42,6 @@ import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.TeltonikaProtocol;
 import org.traccar.protocol.Tk103Protocol;
-import org.traccar.protocol.TopinProtocol;
 import org.traccar.protocol.TotemProtocol;
 import org.traccar.protocol.TzoneProtocol;
 import org.traccar.protocol.UlbotechProtocol;
@@ -88,7 +87,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(FifotrackProtocol.class, 5124);
         put(GlobalstarProtocol.class, 5185);
         put(Minifinder2Protocol.class, 5187);
-        put(TopinProtocol.class, 5199);
 
     }
 
