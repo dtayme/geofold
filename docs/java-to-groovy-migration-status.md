@@ -44,10 +44,11 @@ documentation, with archived Java parity used only as supporting evidence.
 
 | `xexun2` | Migrated to `drivers/xexun2.groovy` covering escape-delimited binary framing (0xfb 0xbf escape sequences), IP-style byte-sum checksum, batch position records with optional alarm/GPS (float and double variants)/WiFi/cell-tower/ToF/speed/course/'G'-type extended GPS blocks, and 4 commands (CUSTOM, POSITION_PERIODIC, POWER_OFF, REBOOT_DEVICE). Java source, frame decoder/encoder, protocol encoder, and old Java protocol tests moved to `archived-protocols/xexun2/`. |
 | `startek` | Migrated to `drivers/startek.groovy` covering variable-length ASCII scriptedFrame (length field at offset 3, total = comma_offset + 4 + length), DOTALL outer regex for IMEI/type/content extraction with checksum strip, type 000 position decoding (event/alarm, YYMMDDHHMMSS date, cell-tower, status, inputs/outputs, power/battery/ADC, fuel, temperature with 15-bit signed encoding, OBD pipe-separated fields, 20+-char driver ID, hours), type 710 serial decode (T1 engine data by direct field index, T2 trip counters), default pass-through (KEY_RESULT), and 4 commands (CUSTOM, OUTPUT_CONTROL, ENGINE_STOP, ENGINE_RESUME). Java source, frame decoder, encoder, and old Java protocol tests moved to `archived-protocols/startek/`. |
+| `huasheng` | Migrated to `drivers/huasheng.groovy` covering 0xC0-delimited binary framing with SLIP-style escape decoding (0xDB 0xDC → 0xC0, 0xDB 0xDD → 0xDB), MSG_LOGIN TLV loop for IMEI (subtype 0x0003) with login ACK, MSG_HSO_REQ heartbeat ACK, MSG_POSITION fixed header (status/event/YYMMDDHHMMSS time/lon/lat/speed/course/alt) plus TLV extensions (OBD 0x0001 with adBlueLevel/fuelLevel2, RSSI/HDOP 0x0005, VIN 0x0009, odometer 0x0010, hours 0x0011, engine data 0x0014, text-format cell towers 0x0020, WiFi 0x0021), MSG_UPFAULT DTC string with P/C/B/U prefix nibble encoding, and 5 commands (POSITION_PERIODIC, OUTPUT_CONTROL, ALARM_ARM, ALARM_DISARM, SET_SPEED_LIMIT). Java source, frame decoder, encoder, and old Java protocol tests moved to `archived-protocols/huasheng/`. |
 
 ## Remaining Active Java Protocols
 
-44 documented, official, or alias-documented Java protocol implementations
+43 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the

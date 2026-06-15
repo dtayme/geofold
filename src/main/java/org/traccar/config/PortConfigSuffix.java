@@ -31,7 +31,6 @@ import org.traccar.protocol.Gl200Protocol;
 import org.traccar.protocol.GlobalstarProtocol;
 import org.traccar.protocol.Gps103Protocol;
 import org.traccar.protocol.Gt06Protocol;
-import org.traccar.protocol.HuaShengProtocol;
 import org.traccar.protocol.Jt600Protocol;
 import org.traccar.protocol.Jt808Protocol;
 import org.traccar.protocol.MegastekProtocol;
@@ -93,7 +92,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(BceProtocol.class, 5080);
         put(CastelProtocol.class, 5086);
         put(WatchProtocol.class, 5093);
-        put(HuaShengProtocol.class, 5111);
         put(FifotrackProtocol.class, 5124);
         put(GlobalstarProtocol.class, 5185);
         put(Minifinder2Protocol.class, 5187);
