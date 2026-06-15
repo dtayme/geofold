@@ -23,7 +23,6 @@ import org.traccar.protocol.AplicomProtocol;
 import org.traccar.protocol.AtrackProtocol;
 import org.traccar.protocol.BceProtocol;
 import org.traccar.protocol.CastelProtocol;
-import org.traccar.protocol.CellocatorProtocol;
 import org.traccar.protocol.EelinkProtocol;
 import org.traccar.protocol.FifotrackProtocol;
 import org.traccar.protocol.GalileoProtocol;
@@ -81,7 +80,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(TeltonikaProtocol.class, 5027);
         put(Mta6Protocol.class, 5028);
         put(TzoneProtocol.class, 5029);
-        put(CellocatorProtocol.class, 5033);
         put(GalileoProtocol.class, 5034);
         put(AtrackProtocol.class, 5044);
         put(RuptelaProtocol.class, 5046);
