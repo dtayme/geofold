@@ -265,7 +265,7 @@ protocol("startek") {
         decode { msg, ctx ->
             String text = (msg instanceof BufReader) ? msg.readString(msg.remaining()) : msg.toString()
 
-            def m = text =~ /(?s)&&.\d+,(\d+),([0-9a-fA-F]{3}),(.+)[0-9a-fA-F]{2}\r\n/
+            def m = text =~ /(?s)&&.\d+,(\d+),([0-9a-fA-F]{3}),(.+)[0-9a-fA-F]{2}\r?\n?/
             if (!m) return null
 
             String imei    = m[0][1]

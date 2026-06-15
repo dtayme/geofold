@@ -51,7 +51,6 @@ import org.traccar.protocol.TotemProtocol;
 import org.traccar.protocol.TzoneProtocol;
 import org.traccar.protocol.UlbotechProtocol;
 import org.traccar.protocol.WatchProtocol;
-import org.traccar.protocol.Xexun2Protocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -99,7 +98,7 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(GlobalstarProtocol.class, 5185);
         put(Minifinder2Protocol.class, 5187);
         put(TopinProtocol.class, 5199);
-        put(Xexun2Protocol.class, 5233);
+
     }
 
     PortConfigSuffix(String key, List<KeyType> types) {

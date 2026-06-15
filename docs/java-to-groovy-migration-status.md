@@ -42,11 +42,12 @@ documentation, with archived Java parity used only as supporting evidence.
 
 | `navigil` | Migrated to `drivers/navigil.groovy` covering scriptedFrame with optional 4-byte preamble detection (LE 0x2477F5F6), length field at byte-offset 6, GPS-to-UTC leap-second correction (−25 s), CRC-16/CCITT-FALSE ACK when flags bit 0 is clear, and 6 message types: MSG_UNIT_REPORT (8), MSG_TG2_REPORT (12), MSG_POSITION_REPORT (13, 3-byte MediumLE coords), MSG_POSITION_REPORT_2 (15), MSG_SNAPSHOT4 (17), MSG_TRACKING_DATA (18). Java source, frame decoder, and old Java protocol tests moved to `archived-protocols/navigil/`. |
 
+| `xexun2` | Migrated to `drivers/xexun2.groovy` covering escape-delimited binary framing (0xfb 0xbf escape sequences), IP-style byte-sum checksum, batch position records with optional alarm/GPS (float and double variants)/WiFi/cell-tower/ToF/speed/course/'G'-type extended GPS blocks, and 4 commands (CUSTOM, POSITION_PERIODIC, POWER_OFF, REBOOT_DEVICE). Java source, frame decoder/encoder, protocol encoder, and old Java protocol tests moved to `archived-protocols/xexun2/`. |
 | `startek` | Migrated to `drivers/startek.groovy` covering variable-length ASCII scriptedFrame (length field at offset 3, total = comma_offset + 4 + length), DOTALL outer regex for IMEI/type/content extraction with checksum strip, type 000 position decoding (event/alarm, YYMMDDHHMMSS date, cell-tower, status, inputs/outputs, power/battery/ADC, fuel, temperature with 15-bit signed encoding, OBD pipe-separated fields, 20+-char driver ID, hours), type 710 serial decode (T1 engine data by direct field index, T2 trip counters), default pass-through (KEY_RESULT), and 4 commands (CUSTOM, OUTPUT_CONTROL, ENGINE_STOP, ENGINE_RESUME). Java source, frame decoder, encoder, and old Java protocol tests moved to `archived-protocols/startek/`. |
 
 ## Remaining Active Java Protocols
 
-45 documented, official, or alias-documented Java protocol implementations
+44 documented, official, or alias-documented Java protocol implementations
 remain under `src/main/java/org/traccar/protocol/`.
 
 HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
