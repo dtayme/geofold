@@ -48,7 +48,6 @@ import org.traccar.protocol.TopinProtocol;
 import org.traccar.protocol.TotemProtocol;
 import org.traccar.protocol.TzoneProtocol;
 import org.traccar.protocol.UlbotechProtocol;
-import org.traccar.protocol.WatchProtocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +88,7 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(UlbotechProtocol.class, 5072);
         put(BceProtocol.class, 5080);
         put(CastelProtocol.class, 5086);
-        put(WatchProtocol.class, 5093);
+
         put(FifotrackProtocol.class, 5124);
         put(GlobalstarProtocol.class, 5185);
         put(Minifinder2Protocol.class, 5187);

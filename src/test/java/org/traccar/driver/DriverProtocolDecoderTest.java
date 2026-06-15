@@ -1567,6 +1567,126 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 "4D4347500BA9880B00880A3900EE00000000000806000001210A140002B6001E0034419B1B1900400401000000014004000000000240046000000003400480000000044004DA0A0000054004000000000640045E000000074004310000000840042B000000094004870000000B4004B10B00000C4004590000000D40040000000010400465000000114004780C000012400465650700144004A4000000154004207F000016400400000000174004000000001E4004000000001F40040000000020400400000000214004000000002440040000000006130003040211D67DA4F7883AAF028403000001000007070001250A1004090E1905001E0001000062"));
     }
 
+    @Test
+    public void testWatchDecode() throws Exception {
+        var decoder = decoder("watch");
+
+        // AL_LTE — SOS alarm
+        verifyAttribute(decoder, text(
+                "[3G*6907919734*003e*AL_LTE,170525,214118,V,0,N,0,E,0,0,0,0,0,22,0,0,00010000,0,0,0]"),
+                Position.KEY_ALARM, Position.ALARM_SOS);
+
+        // oxygen health
+        verifyAttribute(decoder, text(
+                "[3G*9705141740*000B*oxygen,0,98]"),
+                "bloodOxygen", 98);
+
+        // UD_LTE with WiFi access points
+        verifyPosition(decoder, text(
+                "[3G*9705141740*00C2*UD_LTE,260723,185105,V,00.000000,,00.0000000,,0.00,0.0,0.0,0,100,67,0,0,00000000,2,0,605,1,10006,65799,14,10020,4104,4,3,,34:60:f9:ec:19:f8,-82,,98:48:27:55:18:20,-96,,34:e8:94:e4:06:18,-104,0.0]"));
+
+        // SG AL with hex LAC/CID cell towers
+        verifyPosition(decoder, text(
+                "[SG*9059011020*0067*AL,240123,181628,V,54.427538,N,6.409275,W,0.00,0,0,0,19,90,0,0,00000000,1,1,234,10,55C0,3B882A2,132,,10]"));
+
+        // UD2 with altitude and alarm bits
+        verifyPosition(decoder, text(
+                "[SG*9059011020*006b*UD2,240123,162011,A,54.427621,N,6.409190,W,0.00,0,0,8,19,88,0,0,00000000,1,1,FFFF,FFFF,FFFE,3B882A2,132,,00]"));
+
+        // TEMP health
+        verifyAttribute(decoder, text(
+                "[ZJ*5678901234*0001*0009*TEMP,36.5]"),
+                Position.PREFIX_TEMP + 1, 36.5);
+
+        // AL with REMOVING alarm (ZJ with index)
+        verifyAttribute(decoder, text(
+                "[ZJ*689466020014198*0003*0113*AL,221121,085515,V,00.000000,N,000.000000,E,0,0,0,0,0,44,0,0,00100000,1,255,460,0,16399,234887445,0,6,WIFI00,68:77:24:1b:e7:a7,-59,WIFI01,68:77:24:1b:e3:30,-75,WIFI02,68:77:24:1b:e3:27,-75,WIFI03,00:41:d2:c0:f2:f1,-76,WIFI04,00:41:d2:c0:f2:f0,-77,WIFI05,68:77:24:1b:e3:d8,-82]"),
+                Position.KEY_ALARM, Position.ALARM_REMOVING);
+
+        // UD2 — expected coordinates
+        verifyPosition(decoder, text(
+                "[3G*9031853319*004E*UD2,220322,055105,A,22.761162,N,114.360192,E,0,0,47,14,100,64,0,0,00000008,0,0]"));
+
+        // btemp2 health
+        verifyAttribute(decoder, text(
+                "[3G*2104326058*000E*btemp2,1,35.29]"),
+                Position.PREFIX_TEMP + 1, 35.29);
+
+        // SG UD2 with cells + WiFi
+        verifyPosition(decoder, text(
+                "[SG*9159059735*0066*UD2,230322,082138,A,59.55285,N,016.66185,E,0.0,000,26,14,80,70,0,50,00000000,1,1,240,7,34505,80806406,,00]"));
+
+        // SG UD with no cell data
+        verifyPosition(decoder, text(
+                "[SG*9059056143*0053*UD,251021,223408,A,41.46500,N,081.53128,W,0.926,000,0,00,70,70,0,50,00000000,0,1,,,,00]"));
+
+        // 3G UD_LTE with both cells and WiFi
+        verifyPosition(decoder, text(
+                "[3G*2104326058*00E9*UD_LTE,300621,135101,A,32.162652,N,34.888748,E,30.84,265.158,65.621,18,100,83,0,0,00000000,1,1,425,01,10223,8012811,100,3,ES4104,22:74:1d:39:64:ff,-46,metropoline-wifi,a8:3f:a1:e0:66:ba,-89,Egged.co.il,00:0c:42:51:cf:cd,-81,1.7055488]"));
+
+        // 3G AL with 7 cells
+        verifyPosition(decoder, text(
+                "[3G*8809008845*00C0*AL,271219,094744,V,00.000000,N, 0.0000000,E,0.00,0.0,0.0,0,100,81,0,0,00010000,7,0,460,0,9336,3981,141,9336,3912,141,9336,3982,140,9765,4233,134,9765,4071,134,9765,4321,134,9336,4353,132,0,0.0]"));
+
+        // UD2 — negative coordinates (no hemisphere negation)
+        verifyPosition(decoder, text(
+                "[3G*6105117105*008D*UD2,210716,231601,V,-33.480366,N,-70.7630692,E,0.00,0.0,0.0,0,100,34,0,0,00000000,3,255,730,2,29731,54315,167,29731,54316,162,29731,54317,145]"),
+                position("2016-07-21 23:16:01.000", false, -33.48037, -70.76307));
+
+        // SG UD with exact expected coordinates
+        verifyPosition(decoder, text(
+                "[SG*8800000015*0087*UD,220414,134652,A,22.571707,N,113.8613968,E,0.1,0.0,100,7,60,90,1000,50,0000,4,1,460,0,9360,4082,131,9360,4092,148,9360,4091,143,9360,4153,141]"),
+                position("2014-04-22 13:46:52.000", true, 22.57171, 113.86140));
+
+        // SG AL with general alarm fallback
+        verifyPosition(decoder, text(
+                "[SG*8800000015*0087*AL,220414,134652,A,22.571707,N,113.8613968,E,0.1,0.0,100,7,60,90,1000,50,0001,4,1,460,0,9360,4082,131,9360,4092,148,9360,4091,143,9360,4153,141]"));
+
+        // PULSE health
+        verifyAttributes(decoder, text(
+                "[CS*8800000015*0008*PULSE,72]"));
+
+        // heart health (value 0 — still returns position)
+        verifyAttributes(decoder, text(
+                "[3G*6005412902*0007*heart,0]"));
+
+        // heart health (value present)
+        verifyAttributes(decoder, text(
+                "[3G*6005412902*0008*heart,71]"));
+
+        // ZJ UD with index — expected coordinates
+        verifyPosition(decoder, text(
+                "[ZJ*014111001350304*0033*0064*UD,070318,020827,V,00.000000,N,000.000000,E,0,0,0,0,100,19,1000,50,00000000,1,255,460,0,9346,5223,42]"));
+
+        // LK with 2 values only → null (insufficient fields)
+        verifyNull(decoder, text(
+                "[SG*9081000548*0009*LK,0,100]"));
+
+        // LK with 3 values → steps + battery
+        verifyAttributes(decoder, text(
+                "[3G*4700186508*000B*LK,0,10,100]"));
+
+        // TKQ → null (just sends ACK)
+        verifyNull(decoder, text(
+                "[3G*8800000015*0003*TKQ]"));
+
+        // LK with no content → null
+        verifyNull(decoder, text(
+                "[SG*8800000015*0002*LK]"));
+
+        // BPHRT health data
+        verifyAttributes(decoder, text(
+                "[3G*4700609403*0013*bphrt,120,79,73,,,,]"));
+
+        // BLOOD with ZJ index
+        verifyAttributes(decoder, text(
+                "[ZJ*357653059860416*0007*000c*BLOOD,109,68]"));
+
+        // UD with WiFi only — no cell parsing (skip condition: values[3] is MAC)
+        verifyPosition(decoder, text(
+                "[3G*8800000015*00DD*UD,010120,025946,V,0.0,N,0.0,E,22.0,0,-1,0,100,98,0,0,00000000,0,5,eduroam,f4:db:e6:d2:a8:00,-53,eduroam,f4:db:e6:da:d0:80,-79,eduroam,78:0c:f0:24:f9:80,-82,Lions,b0:be:76:0a:05:9a,-82,tubs-guest,f4:db:e6:d2:a8:01,-53,0.0]"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());
