@@ -1791,6 +1791,139 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 Position.KEY_ALARM, Position.ALARM_SOS);
     }
 
+    @Test
+    public void testGps103Decode() throws Exception {
+        var decoder = decoder("gps103");
+
+        // Handshake: short message → null, reply LOAD
+        verifyNull(decoder, text(
+                "##,imei:359586015829802,A\n"));
+
+        verifyNull(decoder, text(
+                "imei:359586015829802\n"));
+
+        // Heartbeat (digit prefix) → null, reply ON
+        verifyNull(decoder, text(
+                "359586015829802\n"));
+
+        // Vibration alarm, L-branch no GPS
+        verifyAttribute(decoder, text(
+                "imei:865456055519122,sensor alarm,2208011920,,L,;"),
+                Position.KEY_ALARM, Position.ALARM_VIBRATION);
+
+        // Regular F-branch position with course
+        verifyAttribute(decoder, text(
+                "imei:868683023212255,tracker,190205084503,,F,064459.000,A,4915.1221,N,01634.5655,E,3.91,83.95;"),
+                "course", 83.95);
+
+        // Regular position with fuel
+        verifyAttribute(decoder, text(
+                "imei:353451044508750,001,0809231929,13554900601,F,055403.000,A,2233.1870,N,11354.3067,E,0.00,30.1,65.43,1,0,10.5%,0.0%,28;"),
+                "fuel1", 10.5);
+
+        // Temperature alarm (T: prefix)
+        verifyPosition(decoder, text(
+                "imei:868683026321020,T:+11,181217080050,,F,080047.000,A,3227.3057,N,11649.4754,W,0.00,0,,0,0,0.00%,,+11;"));
+
+        // Temperature attribute from alarm
+        verifyAttribute(decoder, text(
+                "imei:868683026321020,tracker,181217080106,,F,080102.000,A,3227.3057,N,11649.4754,W,0.00,0,,0,0,0.00%,0,+11;"),
+                Position.PREFIX_TEMP + 1, 11);
+
+        // SOS alarm → not null, sends ACK
+        verifyPosition(decoder, text(
+                "imei:359586015829802,help me,0809231429,13554900601,F,062947.294,A,2234.4026,N,11354.3277,E,0.00,;"));
+
+        // Low battery alarm
+        verifyPosition(decoder, text(
+                "imei:359586015829802,low battery,0809231429,13554900601,F,062947.294,A,2234.4026,N,11354.3277,E,0.00,;"));
+
+        // ac alarm → power cut
+        verifyAttribute(decoder, text(
+                "imei:862106021237716,ac alarm,1611291645,,F,204457.000,A,1010.2783,N,06441.0274,W,0.00,,;"),
+                Position.KEY_ALARM, Position.ALARM_POWER_CUT);
+
+        // L-branch with cell towers
+        verifyNotNull(decoder, text(
+                "imei:864895030279986,ac alarm,180404174252,,L,,,296a,,51f7,,,\n"));
+
+        verifyNotNull(decoder, text(
+                "imei:359710049075097,help me,,,L,,,113b,,558f,,,,,0,0,,,\n"));
+
+        // L-branch no cell data
+        verifyNotNull(decoder, text(
+                "imei:359586015829802,tracker,000000000,13554900601,L,;"));
+
+        // S-hemisphere latitude
+        verifyPosition(decoder, text(
+                "imei:353451047570260,tracker,1302110948,,F,144807.000,A,0805.6615,S,07859.9763,W,0.00,,\n"),
+                position("2013-02-11 14:48:07.000", true, -8.09436, -78.99960));
+
+        // N/S before latitude variant
+        verifyPosition(decoder, text(
+                "imei:353552045403597,tracker,150420050648,53.0,F,0.0,A,N,5306.64155,E,00700.77848,0.0,,1.0,;"));
+
+        // N after lat, E after lon (standard) — local time kept (utc field = 0.0, non-capturing)
+        verifyPosition(decoder, text(
+                "imei:353552045403597,tracker,150420051153,53.0,F,0.0,A,5306.64155,N,00700.77848,E,0.0,,1.0,;"));
+
+        // Slashed date YY/MM/DD HH:MM
+        verifyPosition(decoder, text(
+                "imei:359710040656622,tracker,13/02/27 23:40,,F,125952.000,A,3450.9430,S,13828.6753,E,0.00,0\n"));
+
+        // Digit prefix: 15-digit IMEI prepended
+        verifyPosition(decoder, text(
+                "359769031878322imei:359769031878322,tracker,1602160718,2,F,221811.000,A,1655.2193,S,14546.6722,E,0.00,,\n"));
+
+        // acc on / acc off → ignition
+        verifyAttribute(decoder, text(
+                "imei:864180036029895,acc on,180508145653,,F,065645.000,A,4729.1497,N,01904.2342,E,0.00,0,,1,,0.00%,,;"),
+                Position.KEY_IGNITION, true);
+
+        // Fuel leak alarm (oil prefix)
+        verifyAttribute(decoder, text(
+                "imei:353451044508750,oil 51.67,0809231929,,F,055403.000,A,2233.1870,N,11354.3287,E,0.00,,\n"),
+                Position.KEY_ALARM, Position.ALARM_FUEL_LEAK);
+
+        // DTC alarm
+        verifyAttribute(decoder, text(
+                "imei:353451044508750,DTC,0809231929,,F,055403.000,A,2233.1870,N,11354.3067,E,0.00,30.1,,1,0,10.5%,P0021,;"),
+                Position.KEY_ALARM, Position.ALARM_FAULT);
+
+        // RFID
+        verifyPosition(decoder, text(
+                "imei:868683020235846,rfid,160202091347,49121185,F,011344.000,A,0447.7273,N,07538.9934,W,0.00,0,,0,0,0.00%,,\n"));
+
+        // Timezone correction: local 19:29 UTC+8:45 → UTC 05:54 next day
+        verifyPosition(decoder, text(
+                "imei:359710045559474,tracker,151030080103,,F,000101.000,A,5443.3834,N,02512.9071,E,0.00,0;"),
+                position("2015-10-30 00:01:01.000", true, 54.72306, 25.21512));
+
+        // OBD: full fields
+        verifyAttributes(decoder, text(
+                "imei:868683027758113,OBD,180905200218,,,,0,0,0.39%,70,9.41%,494,0.00,P0137,P0430,,;"));
+
+        // OBD: with odometer and hours
+        verifyAttributes(decoder, text(
+                "imei:359710049057798,OBD,161003192752,1785,,,0,54,96.47%,75,20.00%,1892,0.00,P0134,P0571,,\n"));
+
+        // OBD: sign-only temperature field → null return on missing battery
+        verifyNull(decoder, text(
+                "imei:865328021049167,OBD,141118115036,,,0.0,,000,0.0%,+,0.0%,00000,,,,,\n"));
+
+        // Alternative format with dashes for empty fields
+        verifyPosition(decoder, text(
+                "imei:861359038609986,Equipo 1,---,------,----,214734,241018,26,1,-33.42317,-70.61930,067,229,0674,1.00,08,0,1,---,*"));
+
+        // Alternative format gps=0 → invalid fix
+        verifyPosition(decoder, text(
+                "imei:861359038609986,Equipo 1,---,------,----,214812,241018,14,0,-33.42317,-70.61930,000,000,0000,99.9,00,0,1,---,*"));
+
+        // Alternative format null check: short + imei → handshake
+        verifyNull(decoder, text(
+                "imei:123451234512345,L,*"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

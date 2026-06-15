@@ -28,7 +28,6 @@ import org.traccar.protocol.FifotrackProtocol;
 import org.traccar.protocol.GalileoProtocol;
 import org.traccar.protocol.Gl200Protocol;
 import org.traccar.protocol.GlobalstarProtocol;
-import org.traccar.protocol.Gps103Protocol;
 import org.traccar.protocol.Gt06Protocol;
 import org.traccar.protocol.Jt600Protocol;
 import org.traccar.protocol.Jt808Protocol;
@@ -61,7 +60,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
     }
 
     static {
-        put(Gps103Protocol.class, 5001);
         put(Tk103Protocol.class, 5002);
         put(Gl200Protocol.class, 5004);
         put(T55Protocol.class, 5005);
