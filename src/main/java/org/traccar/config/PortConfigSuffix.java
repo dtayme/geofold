@@ -33,7 +33,6 @@ import org.traccar.protocol.Jt600Protocol;
 import org.traccar.protocol.Jt808Protocol;
 import org.traccar.protocol.MeiligaoProtocol;
 import org.traccar.protocol.MeitrackProtocol;
-import org.traccar.protocol.Minifinder2Protocol;
 import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
@@ -86,7 +85,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
 
         put(FifotrackProtocol.class, 5124);
         put(GlobalstarProtocol.class, 5185);
-        put(Minifinder2Protocol.class, 5187);
 
     }
 
