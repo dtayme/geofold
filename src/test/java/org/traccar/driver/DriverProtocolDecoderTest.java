@@ -2056,6 +2056,41 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 "ab183200c6bd020101100138363838333230343730323133363209247a0b146090087a641528c03a79ba309be5dec3c2024122c21c2407676267"));
     }
 
+    @Test
+    public void testUlbotechDecode() throws Exception {
+        var decoder = decoder("ulbotech");
+
+        // Binary: GPS + STATUS + ODOMETER + ADC + J1708 + CANBUS + EVENT
+        verifyPosition(decoder, binary(
+                "f8010103515810532780699f7e2e3f010e015ee4c906bde45c00000000008b0304004000000404002c776005060373193622110b00240b00fee8ffff807dffff606d0b00fee9af000000af0000000b00feee7d78807dffffffff100101cc2af8"));
+
+        // Binary: GPS with valid hdop
+        verifyPosition(decoder, binary(
+                "F80101035785203457289495D60235010E016175A506C2C838000000000064"));
+
+        // Binary: no GPS → lastLocation
+        verifyNotNull(decoder, binary(
+                "F8010108683230231070781EA3676E020BFFFFFFFFFFFFFFFFFFFF780304000000030404000002C20506032A1790220E100101AC72F8"));
+
+        // Binary: CANBUS type 0x0B with 2-byte length field
+        verifyNotNull(decoder, binary(
+                "f8010108683230220996561ea6ce1c020bffffffffffffffffffff78030400000000040400087b710506035519ad2214060800000000000000006220f8"));
+
+        // Binary: GPS + LBS (4-byte cid, length=11)
+        verifyPosition(decoder, binary(
+                "f8010108679650230646339de69054010e015ee17506bde2c60000000000ac0304024000000404000009f705060390181422170711310583410c0000310d00312f834131018608040003130a100101136cf8"));
+
+        // Binary: GPS + OBD2 + J1708
+        verifyPosition(decoder, binary(
+                "f8010103596580420045259CFB3329010E015ED91506BDE5A800000000009E030402420000040400492AA405060344197E220D071131058F410C1591310D48312F8F413107C60804027666B00C138254D182607A826EE083BE554385F50019423CAD1DF8"));
+
+        // Text: login-only (no time/date/command) → null
+        verifyNull(decoder, buffer("*TS01,353323081464660#"));
+
+        // Text: command response → attributes
+        verifyAttributes(decoder, buffer("*TS01,868323025245751,134955140317,WFE:0#"));
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());
