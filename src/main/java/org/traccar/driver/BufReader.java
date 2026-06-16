@@ -183,9 +183,9 @@ public final class BufReader {
         return buf.isReadable();
     }
 
-    /** Skips {@code n} bytes. */
+    /** Skips {@code n} bytes. Negative {@code n} seeks backward within the buffer. */
     public void skip(int n) {
-        buf.skipBytes(n);
+        buf.readerIndex(buf.readerIndex() + n);
     }
 
     /**

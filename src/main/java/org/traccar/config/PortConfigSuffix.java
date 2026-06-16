@@ -39,7 +39,6 @@ import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.TeltonikaProtocol;
 import org.traccar.protocol.Tk103Protocol;
 import org.traccar.protocol.TotemProtocol;
-import org.traccar.protocol.TzoneProtocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +67,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(Gt06Protocol.class, 5023);
         put(TeltonikaProtocol.class, 5027);
         put(Mta6Protocol.class, 5028);
-        put(TzoneProtocol.class, 5029);
         put(AtrackProtocol.class, 5044);
         put(RuptelaProtocol.class, 5046);
         put(AplicomProtocol.class, 5049);
