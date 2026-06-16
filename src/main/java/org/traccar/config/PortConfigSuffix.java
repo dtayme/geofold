@@ -21,7 +21,6 @@ package org.traccar.config;
 import org.traccar.BaseProtocol;
 import org.traccar.protocol.AplicomProtocol;
 import org.traccar.protocol.AtrackProtocol;
-import org.traccar.protocol.BceProtocol;
 import org.traccar.protocol.CastelProtocol;
 import org.traccar.protocol.EelinkProtocol;
 import org.traccar.protocol.FifotrackProtocol;
@@ -78,7 +77,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(AplicomProtocol.class, 5049);
         put(OsmAndProtocol.class, 5055);
         put(EelinkProtocol.class, 5064);
-        put(BceProtocol.class, 5080);
         put(CastelProtocol.class, 5086);
 
         put(FifotrackProtocol.class, 5124);
