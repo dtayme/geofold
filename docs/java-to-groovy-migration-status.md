@@ -59,21 +59,40 @@ documentation, with archived Java parity used only as supporting evidence.
 
 ## Remaining Active Java Protocols
 
-32 documented, official, or alias-documented Java protocol implementations
-remain under `src/main/java/org/traccar/protocol/`.
+20 Java protocol implementations remain under `src/main/java/org/traccar/protocol/`.
 
-HTTP protocols such as `osmand` and `globalstar` cannot be represented by the
-current driver DSL without adding HTTP request/response support. Large binary
-protocols such as `jt808`, `teltonika`, `gt06`, and `ruptela` need
-protocol-specific frame, checksum, batch, attachment, and command audits before
-safe migration.
+### Blocked on DSL gaps
 
-Recommended order:
+| Protocol | Blocker |
+| --- | --- |
+| `osmand` | HTTP request/response — no HTTP handler support in driver DSL |
+| `globalstar` | HTTP request/response — no HTTP handler support in driver DSL |
 
-1. Continue with simple documented text or simple binary protocols whose Java
-   pipelines use standard DSL framing and no custom HTTP handlers.
-2. Add driver framework support for HTTP protocols before migrating OsmAnd,
-   Globalstar, or other servlet-style protocols.
-3. Migrate complex binary protocols only after each protocol has complete
-   source-doc fixture coverage and command coverage mapped to Traccar command
-   types.
+### Large / complex — audit required before migration
+
+| Protocol | Decoder LOC | Notes |
+| --- | --- | --- |
+| `gt06` | 1632 | Massive binary protocol; batch, commands, multiple hardware variants |
+| `jt808` | 1632 | Chinese national standard; batch, many message types, encryption variants |
+| `suntech` | 981 | Many ST-xxx model variants; complex field layout per model |
+| `navis` | 730 | Complex binary TLV with many sub-types |
+| `atrack` | 729 | Multi-record binary batch; custom framing |
+| `teltonika` | 726 | Complex binary batch with codec variants |
+| `aplicom` | 648 | Multi-application binary TLV |
+| `castel` | 645 | Many hardware variants |
+| `tk103` | 614 | Mixed text/binary; many clone variants |
+
+### Simpler / ready to migrate
+
+| Protocol | Decoder LOC | Notes |
+| --- | --- | --- |
+| `meitrack` | 597 | Text CSV protocol |
+| `t55` | 593 | NMEA-based text protocol |
+| `totem` | 573 | Text CSV protocol |
+| `eelink` | 509 | Binary with standard length-field framing |
+| `meiligao` | 507 | Binary with header/checksum framing |
+| `jt600` | 507 | Binary; simpler sibling of jt808 |
+| `mta6` | 309 | Text/binary mixed |
+| `osmand` (HTTP) | 311 | Blocked (HTTP) |
+| `ruptela` | 377 | Binary batch |
+| `gl200` | 58 (dispatcher) | Text CSV; delegates to Gl200Text/Gl200Binary sub-decoders (separate files) |
