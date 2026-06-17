@@ -33,7 +33,6 @@ import org.traccar.protocol.MeitrackProtocol;
 import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
-import org.traccar.protocol.RuptelaProtocol;
 import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.TeltonikaProtocol;
@@ -68,7 +67,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(TeltonikaProtocol.class, 5027);
         put(Mta6Protocol.class, 5028);
         put(AtrackProtocol.class, 5044);
-        put(RuptelaProtocol.class, 5046);
         put(AplicomProtocol.class, 5049);
         put(OsmAndProtocol.class, 5055);
         put(EelinkProtocol.class, 5064);
