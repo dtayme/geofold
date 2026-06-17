@@ -36,7 +36,6 @@ import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.TeltonikaProtocol;
 import org.traccar.protocol.Tk103Protocol;
-import org.traccar.protocol.TotemProtocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +53,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(Tk103Protocol.class, 5002);
         put(Gl200Protocol.class, 5004);
 
-        put(TotemProtocol.class, 5007);
         put(MeiligaoProtocol.class, 5009);
         put(SuntechProtocol.class, 5011);
         put(Jt600Protocol.class, 5014);
