@@ -34,7 +34,6 @@ import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.protocol.SuntechProtocol;
-import org.traccar.protocol.T55Protocol;
 import org.traccar.protocol.TeltonikaProtocol;
 import org.traccar.protocol.Tk103Protocol;
 import org.traccar.protocol.TotemProtocol;
@@ -54,7 +53,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
     static {
         put(Tk103Protocol.class, 5002);
         put(Gl200Protocol.class, 5004);
-        put(T55Protocol.class, 5005);
 
         put(TotemProtocol.class, 5007);
         put(MeiligaoProtocol.class, 5009);
