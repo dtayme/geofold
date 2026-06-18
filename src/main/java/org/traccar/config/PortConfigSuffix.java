@@ -22,7 +22,6 @@ import org.traccar.BaseProtocol;
 import org.traccar.protocol.AplicomProtocol;
 import org.traccar.protocol.AtrackProtocol;
 import org.traccar.protocol.CastelProtocol;
-import org.traccar.protocol.EelinkProtocol;
 import org.traccar.protocol.Gl200Protocol;
 import org.traccar.protocol.GlobalstarProtocol;
 import org.traccar.protocol.Gt06Protocol;
@@ -65,7 +64,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(AtrackProtocol.class, 5044);
         put(AplicomProtocol.class, 5049);
         put(OsmAndProtocol.class, 5055);
-        put(EelinkProtocol.class, 5064);
         put(CastelProtocol.class, 5086);
 
         put(GlobalstarProtocol.class, 5185);
