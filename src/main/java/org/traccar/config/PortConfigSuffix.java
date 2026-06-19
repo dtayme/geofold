@@ -22,7 +22,6 @@ import org.traccar.BaseProtocol;
 import org.traccar.protocol.AplicomProtocol;
 import org.traccar.protocol.AtrackProtocol;
 import org.traccar.protocol.CastelProtocol;
-import org.traccar.protocol.Gl200Protocol;
 import org.traccar.protocol.GlobalstarProtocol;
 import org.traccar.protocol.Gt06Protocol;
 import org.traccar.protocol.Jt808Protocol;
@@ -47,7 +46,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
 
     static {
         put(Tk103Protocol.class, 5002);
-        put(Gl200Protocol.class, 5004);
 
         put(SuntechProtocol.class, 5011);
         put(Jt808Protocol.class, 5015);
