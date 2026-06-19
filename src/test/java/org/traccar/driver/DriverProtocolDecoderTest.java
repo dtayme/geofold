@@ -3109,6 +3109,76 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
 
     }
 
+    @Test
+    public void testTk103Decode() throws Exception {
+        var decoder = decoder("tk103");
+
+        // BS51 BMS
+        verifyAttributes(decoder, text(
+                "(007030201454BS5190:02150000753001DC,91:0EE8060EDC0A01DC,92:42014201DC0A01DC,93:00010127000037C8,94:0E01000002000000,95:020EE10EE20EE800030EE40EE00EE700040EDD0EE40EE400050EDC0EDF0EE400,96:0142000000000000,97:0000000000000000,98:0000000000000000)"));
+
+        // BS50 battery temperature
+        verifyAttribute(decoder, text(
+                "(352602014867BS500064FF0EF10FF10FF00FF20FF30FF20FF20FF40FF20FF40FF40FF20FF30FF20F0000000000000000000000000000000000000000000000001663000000010004000000000000000002444444420000000000A00FA000000000000000200000000315E2000000)"),
+                "batteryTemp2", 26);
+
+        // BZ00 network (cell towers)
+        verifyAttributes(decoder, text(
+                "(027046434858BZ00,{460,0,20949,58711}\n{460,0,20494,54003}\n{460,0,20951,19569}\n,01000000)"));
+
+        // BP05 with cell data (sends ack and decodes cells)
+        verifyAttributes(decoder, text(
+                "(027045009305BP05355227045009305,{413,2,30073,16724}\n{413,2,30073,16730}\n{413,2,30073,49860}\n,01000000)"));
+
+        // DW3B position (alternative mode, comma-separated device ID)
+        verifyPosition(decoder, text(
+                "(868822040452227,DW3B,150421,A,4154.51607N,45.78950E,0.050,103142,0.000,595.200,7,0)"));
+
+        // BR00 standard position (12-char device ID, no comma)
+        verifyPosition(decoder, text(
+                "(086375304593BR00210119A2220.0160N11335.4073E0000014000309.84001000293L0000015FP23BS27F)"));
+
+        // BV00 VIN
+        verifyAttribute(decoder, text(
+                "(027023361470BV005J6RW2H53HL066029)"),
+                Position.KEY_VIN, "5J6RW2H53HL066029");
+
+        // BQ81 alarm
+        verifyAttribute(decoder, text(
+                "(044027395704BQ81,ALARM,1,164,151101A2238.5237N11349.4571E0.7031241010.0000,00000000)"),
+                Position.KEY_ALARM, Position.ALARM_OVERSPEED);
+
+        // BP00 handshake → null
+        verifyNull(decoder, text(
+                "(027044702512BP00027044702512HSO01A4)"));
+
+        // ZC11 movement alarm (alternative mode)
+        verifyPosition(decoder, text(
+                "(864768011069660,ZC11,250517,V,0000.0000N,00000.0000E,000.0,114725,000.0,0.00,11)"));
+
+        // ZC17 removing alarm (alternative mode)
+        verifyPosition(decoder, text(
+                "(864768011069660,ZC17,250517,A,3211.7118N,03452.8086E,0.68,115525,208.19,64.50,9)"));
+
+        // DW5B LBS+WiFi
+        verifyPosition(decoder, text(
+                "(358511020000026,DW5B,310,6,29876,30393,0,041217,102211)"));
+
+        // ZC20 battery status
+        verifyAttributes(decoder, text(
+                "(013632651491,ZC20,040613,040137,6,42,112,0)"));
+
+        // ZC03 command result
+        verifyAttribute(decoder, text(
+                "(864768010869060,ZC03,050117,154745,$Notice: Device version: 1.0$)"),
+                Position.KEY_RESULT, "Notice: Device version: 1.0");
+
+        // BR00 with temperature
+        verifyPosition(decoder, text(
+                "(094625928000BR00190213A1156.0431S07705.6145W000.000023521.40000000007L00000314T113)"));
+
+    }
+
     private void assertTextAck(EmbeddedChannel channel, String expected) {
         NetworkMessage response = assertInstanceOf(NetworkMessage.class, channel.readOutbound());
         assertEquals(expected, response.getMessage());

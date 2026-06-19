@@ -30,7 +30,6 @@ import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.protocol.SuntechProtocol;
 import org.traccar.protocol.TeltonikaProtocol;
-import org.traccar.protocol.Tk103Protocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +44,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
     }
 
     static {
-        put(Tk103Protocol.class, 5002);
-
         put(SuntechProtocol.class, 5011);
         put(Jt808Protocol.class, 5015);
         put(NavisProtocol.class, 5019);
