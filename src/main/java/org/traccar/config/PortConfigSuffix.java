@@ -26,7 +26,6 @@ import org.traccar.protocol.Gl200Protocol;
 import org.traccar.protocol.GlobalstarProtocol;
 import org.traccar.protocol.Gt06Protocol;
 import org.traccar.protocol.Jt808Protocol;
-import org.traccar.protocol.MeitrackProtocol;
 import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
@@ -53,7 +52,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(SuntechProtocol.class, 5011);
         put(Jt808Protocol.class, 5015);
         put(NavisProtocol.class, 5019);
-        put(MeitrackProtocol.class, 5020);
         put(Gt06Protocol.class, 5023);
         put(TeltonikaProtocol.class, 5027);
         put(Mta6Protocol.class, 5028);
