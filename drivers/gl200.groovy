@@ -646,7 +646,10 @@ def decodeIgn = { String[] v, String type, ctx ->
     idx++  // duration
     idx = decodeLocIdx(pos, model, v, idx)
     pos.set(Position.KEY_IGNITION, type.contains("GN"))
-    if (idx < v.length) { pos.set(Position.KEY_HOURS, parseHours(v[idx])); idx++ }
+    if (idx < v.length) {
+        def hours = parseHours(v[idx]); idx++
+        if (hours != null) pos.set(Position.KEY_HOURS, hours)
+    }
     if (idx < v.length && !v[idx].isEmpty())
         pos.set(Position.KEY_ODOMETER, Double.parseDouble(v[idx]) * 1000)
     pos.setDeviceTime(parseDate14(v[v.length - 2]))
@@ -937,6 +940,120 @@ def decodeDat = { String[] v, ctx ->
     pos
 }
 
+// CAN bus data report
+def decodeCan = { String[] v, ctx ->
+    def session = ctx.session(v[2])
+    if (session == null) return null
+    def pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
+    String model = getModel(v[1])
+    def i = [6]  // array-boxed index: start at reportMask field (0=hdr,1=ver,2=imei,3=name,4=rtype,5=state,6=mask)
+    long mask = 0L
+    try { mask = Long.parseLong(v[i[0]], 16) } catch (Exception ignored) {}
+    i[0]++
+
+    // inline helpers: c() consumes + sets if non-empty; s() just skips
+    def c = { boolean set, Closure action ->
+        if (set && i[0] < v.length) {
+            String f = v[i[0]++]
+            if (!f.isEmpty()) try { action(f) } catch (Exception ignored2) {}
+        }
+    }
+    def sk = { boolean cond -> if (cond && i[0] < v.length) i[0]++ }
+
+    c(BitUtil.check(mask, 0))  { f -> pos.set(Position.KEY_VIN, f) }
+    c(BitUtil.check(mask, 1))  { f -> pos.set(Position.KEY_IGNITION, Integer.parseInt(f) > 0) }
+    c(BitUtil.check(mask, 2))  { f -> pos.set(Position.KEY_OBD_ODOMETER, Integer.parseInt(f.substring(1))) }
+    c(BitUtil.check(mask, 3))  { f -> pos.set(Position.KEY_FUEL_USED, Double.parseDouble(f)) }
+    c(BitUtil.check(mask, 5))  { f -> pos.set(Position.KEY_RPM, Integer.parseInt(f)) }
+    c(BitUtil.check(mask, 4))  { f -> pos.set(Position.KEY_OBD_SPEED, Integer.parseInt(f)) }
+    c(BitUtil.check(mask, 6))  { f -> pos.set(Position.KEY_COOLANT_TEMP, Integer.parseInt(f)) }
+    c(BitUtil.check(mask, 7))  { f -> if (f.startsWith("L/H")) pos.set(Position.KEY_FUEL_CONSUMPTION, Double.parseDouble(f.substring(3))) }
+    c(BitUtil.check(mask, 8))  { f -> pos.set(Position.KEY_FUEL, Double.parseDouble(f.substring(1))) }
+    c(BitUtil.check(mask, 9))  { f -> pos.set("range", Long.parseLong(f) * 100) }
+    c(BitUtil.check(mask, 10)) { f -> pos.set(Position.KEY_THROTTLE, Integer.parseInt(f)) }
+    c(BitUtil.check(mask, 11)) { f -> pos.set(Position.KEY_HOURS, (long)(Double.parseDouble(f) * 3600000L)) }
+    c(BitUtil.check(mask, 12)) { f -> pos.set(Position.KEY_DRIVING_TIME, Double.parseDouble(f)) }
+    c(BitUtil.check(mask, 13)) { f -> pos.set("idleHours", Double.parseDouble(f)) }
+    c(BitUtil.check(mask, 14)) { f -> pos.set("idleFuelConsumption", Double.parseDouble(f)) }
+    c(BitUtil.check(mask, 15)) { f -> pos.set(Position.KEY_AXLE_WEIGHT, Integer.parseInt(f)) }
+    c(BitUtil.check(mask, 16)) { f -> pos.set("tachographInfo", Integer.parseInt(f, 16)) }
+    c(BitUtil.check(mask, 17)) { f -> pos.set("indicators", Integer.parseInt(f, 16)) }
+    c(BitUtil.check(mask, 18)) { f -> pos.set("lights", Integer.parseInt(f, 16)) }
+    c(BitUtil.check(mask, 19)) { f -> pos.set("doors", Integer.parseInt(f, 16)) }
+    c(BitUtil.check(mask, 20)) { f -> pos.set("vehicleOverspeed", Double.parseDouble(f)) }
+    c(BitUtil.check(mask, 21)) { f -> pos.set("engineOverspeed", Double.parseDouble(f)) }
+
+    if (model == "GV350M") {
+        sk(BitUtil.check(mask, 22)); sk(BitUtil.check(mask, 23)); sk(BitUtil.check(mask, 24))
+    } else if (model == "GV355CEU") {
+        sk(BitUtil.check(mask, 22)); sk(BitUtil.check(mask, 23)); sk(BitUtil.check(mask, 24))
+        sk(BitUtil.check(mask, 25)); sk(BitUtil.check(mask, 26)); sk(BitUtil.check(mask, 27))
+        sk(BitUtil.check(mask, 28))
+    }
+
+    long extMask = 0L
+    if (BitUtil.check(mask, 29) && i[0] < v.length) {
+        try { extMask = Long.parseLong(v[i[0]], 16) } catch (Exception ignored) {}
+        i[0]++
+    }
+
+    c(BitUtil.check(extMask, 0))  { f -> pos.set("adBlueLevel", Double.parseDouble(f.substring(1))) }
+    c(BitUtil.check(extMask, 1))  { f -> pos.set("axleWeight1", Integer.parseInt(f)) }
+    c(BitUtil.check(extMask, 2))  { f -> pos.set("axleWeight3", Integer.parseInt(f)) }
+    c(BitUtil.check(extMask, 3))  { f -> pos.set("axleWeight4", Integer.parseInt(f)) }
+    sk(BitUtil.check(extMask, 4)); sk(BitUtil.check(extMask, 5)); sk(BitUtil.check(extMask, 6))
+    c(BitUtil.check(extMask, 7))  { f -> pos.set(Position.PREFIX_ADC + 1, Integer.parseInt(f) / 1000.0) }
+    sk(BitUtil.check(extMask, 8));  sk(BitUtil.check(extMask, 9));  sk(BitUtil.check(extMask, 10))
+    sk(BitUtil.check(extMask, 11)); sk(BitUtil.check(extMask, 12)); sk(BitUtil.check(extMask, 13))
+    sk(BitUtil.check(extMask, 14))
+    c(BitUtil.check(extMask, 15)) { f -> pos.set("driver1Card", f) }
+    c(BitUtil.check(extMask, 16)) { f -> pos.set("driver2Card", f) }
+    c(BitUtil.check(extMask, 17)) { f -> pos.set("driver1Name", f) }
+    c(BitUtil.check(extMask, 18)) { f -> pos.set("driver2Name", f) }
+    c(BitUtil.check(extMask, 19)) { f -> pos.set("registration", f) }
+    sk(BitUtil.check(extMask, 20)); sk(BitUtil.check(extMask, 21)); sk(BitUtil.check(extMask, 22))
+    sk(BitUtil.check(extMask, 23)); sk(BitUtil.check(extMask, 24)); sk(BitUtil.check(extMask, 25))
+    sk(BitUtil.check(extMask, 26)); sk(BitUtil.check(extMask, 27)); sk(BitUtil.check(extMask, 28))
+    sk(BitUtil.check(extMask, 29)); sk(BitUtil.check(extMask, 30))
+
+    if (BitUtil.check(extMask, 31) && i[0] < v.length) {
+        long canMask = 0L
+        try { canMask = Long.parseLong(v[i[0]], 16) } catch (Exception ignored) {}
+        i[0]++
+        sk(BitUtil.check(canMask, 0)); sk(BitUtil.check(canMask, 1)); sk(BitUtil.check(canMask, 2))
+    }
+
+    if (model != "GV355CEU" && BitUtil.check(mask, 30)) {
+        while (i[0] < v.length && v[i[0]].isEmpty()) i[0]++
+        if (i[0] < v.length) {
+            boolean valid = Integer.parseInt(v[i[0]++]) > 0
+            if (i[0] < v.length && !v[i[0]].isEmpty()) {
+                pos.setValid(valid)
+                pos.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(v[i[0]++])))
+                pos.setCourse(Integer.parseInt(v[i[0]++]))
+                pos.setAltitude(Double.parseDouble(v[i[0]++]))
+                pos.setLongitude(Double.parseDouble(v[i[0]++]))
+                pos.setLatitude(Double.parseDouble(v[i[0]++]))
+                pos.setTime(parseDate14(v[i[0]++]))
+            } else {
+                i[0] += 6
+                ctx.lastLocation(pos, null)
+            }
+        }
+    } else {
+        ctx.lastLocation(pos, null)
+    }
+
+    if (BitUtil.check(mask, 31)) i[0] += 5  // cell (4) + reserved (1)
+
+    if (v.length >= 2 && v[v.length - 2]?.length() == 14) {
+        pos.setDeviceTime(parseDate14(v[v.length - 2]))
+    }
+
+    pos
+}
+
 // basic fallback for any unrecognised type
 def decodeBasic = { String[] v, String type, ctx ->
     def session = ctx.session(v[2])
@@ -1120,6 +1237,7 @@ protocol("gl200") {
                     case "BID" -> decodeBid(v, ctx)
                     case "LSA" -> decodeLsa(v, ctx)
                     case "DAT" -> decodeDat(v, ctx)
+                    case "CAN" -> decodeCan(v, ctx)
                     default -> null
                 }
                 if (result == null) result = decodeBasic(v, type, ctx)

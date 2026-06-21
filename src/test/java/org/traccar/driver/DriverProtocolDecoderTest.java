@@ -3086,7 +3086,7 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 Position.KEY_ALARM, Position.ALARM_SOS);
 
         // Text: ERI with extended fields
-        verifyPositions(decoder, buffer(
+        verifyPosition(decoder, buffer(
                 "+RESP:GTERI,4F0D06,865585041396684,,00000100,12665,10,1,1,0.0,342,38.6,49.846792,40.426182,20260220064016,0400,0010,0F6E,08D7,00,0.0,,,,100,110000,,0,20260220064016,91C9$"));
 
         // Text: IGN with CV200 model
@@ -3310,11 +3310,11 @@ public class DriverProtocolDecoderTest extends ProtocolTest {
                 Position.KEY_DRIVER_UNIQUE_ID, "12749884");
 
         // CODEC_12, binary result
-        verifyPositions(decoder, false, binary(
+        verifyAttributes(decoder, binary(
                 "00000000000000100C010600000008010300010015D5C5010000D988"));
 
         // CODEC_12, axle weight data
-        verifyPositions(decoder, false, binary(
+        verifyAttributes(decoder, binary(
                 "000000000000004f0c01060000004755555555777730362e343b30342e323b30302e303b30302e303b30302e303b30302e303b30302e303b30302e303b30312e333b30302e303b31302e373b30302e303b5353530d0a010000e371"));
 
         // CODEC_GH3000, 4 positions (mix of last-location and GPS positions)
