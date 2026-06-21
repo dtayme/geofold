@@ -16,6 +16,7 @@ import org.traccar.session.cache.CacheManager;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -116,15 +117,35 @@ public class DriverProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private Object collectResult(DecodeContext ctx, Object result) {
-        List<Position> collected = ctx.collected();
-        if (!collected.isEmpty()) {
+        List<Position> emitted = ctx.collected();
+
+        if (!emitted.isEmpty()) {
             if (result instanceof Position position) {
-                collected.add(position);
+                emitted.add(position);
+            } else if (result instanceof List<?> resultList) {
+                for (Object item : resultList) {
+                    if (item instanceof Position position) {
+                        emitted.add(position);
+                    }
+                }
             }
-            return collected;
+            return emitted;
         }
+
         if (result instanceof Position position) {
             return position;
+        }
+        if (result instanceof List<?> resultList) {
+            List<Position> positions = new ArrayList<>();
+            for (Object item : resultList) {
+                if (item instanceof Position position) {
+                    positions.add(position);
+                }
+            }
+            if (positions.isEmpty()) {
+                return null;
+            }
+            return positions.size() == 1 ? positions.get(0) : positions;
         }
         return null;
     }

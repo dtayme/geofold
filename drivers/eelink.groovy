@@ -161,7 +161,7 @@ def decodeNew = { BufReader buf, int type, int index, session, ctx ->
         pos.course    = buf.readUShort()
         pos.set(Position.KEY_SATELLITES, buf.readUByte())
     } else {
-        ctx.lastLocation(pos, pos.time)
+        ctx.lastLocation(pos, pos.fixTime)
     }
 
     def network = new Network()
@@ -364,7 +364,7 @@ def processFrame = { BufReader buf, isUdp, udpSession, ctx ->
                 writeByte type
                 writeShort 9
                 writeShort index
-                writeInt (int)(System.currentTimeMillis() / 1000)
+                writeInt((int) (System.currentTimeMillis() / 1000))
                 writeShort 1
                 writeByte 0
             })
@@ -391,33 +391,29 @@ def processFrame = { BufReader buf, isUdp, udpSession, ctx ->
     }
 
     def session = isUdp ? udpSession : ctx.session()
-    if (!session) return
+    if (!session) return null
 
     if (type == 0x02 || type == 0x04 || type == 0x05 || type == 0x06) {
-        // MSG_GPS / MSG_ALARM / MSG_STATE / MSG_SMS — old protocol
-        ctx.emit(decodeOld(payload, type, index, session, ctx))
+        return decodeOld(payload, type, index, session, ctx)
 
     } else if (type >= MSG_NORMAL && type <= MSG_OBD_CODE) {
-        // New protocol (0x12–0x19) and camera types (0x1E, 0x1F)
-        ctx.emit(decodeNew(payload, type, index, session, ctx))
+        return decodeNew(payload, type, index, session, ctx)
 
     } else if (type == 0x03 && payload.readableBytes() >= 2
                || type == 0x07 && payload.readableBytes() == 4) {
-        // MSG_HEARTBEAT with status, or MSG_OBD with exactly 4-byte payload
         def pos = ctx.newPosition()
         pos.deviceId = session.deviceId
         ctx.lastLocation(pos)
         decodeStatus(pos, payload.readUShort())
-        ctx.emit(pos)
+        return pos
 
     } else if (type == 0x07) {
-        // MSG_OBD with full data
-        ctx.emit(decodeObd(payload, session, ctx))
+        return decodeObd(payload, session, ctx)
 
     } else if (type == 0x80) {
-        // MSG_DOWNLINK — command result
-        ctx.emit(decodeResult(payload, index, session, ctx))
+        return decodeResult(payload, index, session, ctx)
     }
+    return null
 }
 
 // ── protocol definition ─────────────────────────────────────────────────────
@@ -453,20 +449,23 @@ protocol("eelink") {
             def buf = msg as BufReader
 
             if (buf.getUByte(0) == 0x45 && buf.getUByte(1) == 0x4C) {
-                // UDP mode: extract device ID from outer header
+                // UDP mode: extract device ID from outer header, process sub-frames
                 buf.skip(6) // EL(2) + outer_length(2) + checksum(2)
                 String uniqueId = buf.readHex(8).substring(1)
                 def session = ctx.session(uniqueId)
 
+                def positions = []
                 while (buf.isReadable()) {
-                    processFrame(buf, true, session, ctx)
+                    def pos = processFrame(buf, true, session, ctx)
+                    if (pos) positions << pos
                 }
+                if (positions.size() == 1) return positions[0]
+                positions.each { ctx.emit(it) }
+                return null
             } else {
-                // TCP mode: session registered via prior MSG_LOGIN
-                processFrame(buf, false, null, ctx)
+                // TCP mode: session registered via prior MSG_LOGIN, return single position
+                return processFrame(buf, false, null, ctx)
             }
-
-            return null
         }
 
         encode { cmd, ctx ->

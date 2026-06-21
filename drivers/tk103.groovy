@@ -88,7 +88,7 @@ def PATTERN_COMMAND_RESULT = Pattern.compile(
     ".{4}," +                                          // command
     "(\\d\\d)(\\d\\d)(\\d\\d)," +                      // g2,g3,g4: date DDMMYY
     "(\\d\\d)(\\d\\d)(\\d\\d)," +                      // g5,g6,g7: time HHMMSS
-    "\\$([\\s\\S]*?)(?:\\$|$)"                         // g8: message
+    '\\$([\\s\\S]*?)(?:\\$|$)'                         // g8: message
 )
 
 def PATTERN_VIN = Pattern.compile(
@@ -198,8 +198,10 @@ def readUIntLE = { byte[] b, int off ->
 def decodeBattery = { String sentence, ctx ->
     def m = PATTERN_BATTERY.matcher(sentence)
     if (!m.matches()) return null
+    def session = ctx.session(m.group(1))
+    if (!session) return null
     def pos = ctx.newPosition()
-    ctx.session(m.group(1))
+    pos.deviceId = session.deviceId
     ctx.lastLocation(pos, mkDateDMY(m.group(2).toInteger(), m.group(3).toInteger(), m.group(4).toInteger(),
                                     m.group(5).toInteger(), m.group(6).toInteger(), m.group(7).toInteger()))
     int lvl = m.group(8).toInteger()
@@ -214,8 +216,10 @@ def decodeBattery = { String sentence, ctx ->
 def decodeCell = { String sentence, ctx ->
     def m = PATTERN_CELL.matcher(sentence)
     if (!m.matches()) return null
+    def session = ctx.session(m.group(1))
+    if (!session) return null
     def pos = ctx.newPosition()
-    ctx.session(m.group(1))
+    pos.deviceId = session.deviceId
     ctx.lastLocation(pos, null)
     Network network = new Network()
     m.group(2).split("\n").each { String cell ->
@@ -235,8 +239,10 @@ def decodeCell = { String sentence, ctx ->
 def decodeNetwork = { String sentence, ctx ->
     def m = PATTERN_NETWORK.matcher(sentence)
     if (!m.matches()) return null
+    def session = ctx.session(m.group(1))
+    if (!session) return null
     def pos = ctx.newPosition()
-    ctx.session(m.group(1))
+    pos.deviceId = session.deviceId
     ctx.lastLocation(pos, null)
     pos.setNetwork(new Network(CellTower.from(
         m.group(2).toInteger(), m.group(3).toInteger(),
@@ -247,8 +253,10 @@ def decodeNetwork = { String sentence, ctx ->
 def decodeLbsWifi = { String sentence, ctx ->
     def m = PATTERN_LBSWIFI.matcher(sentence)
     if (!m.matches()) return null
+    def session = ctx.session(m.group(1))
+    if (!session) return null
     def pos = ctx.newPosition()
-    ctx.session(m.group(1))
+    pos.deviceId = session.deviceId
     decodeType(pos, m.group(2), "0")
     ctx.lastLocation(pos, null)
     Network network = new Network()
@@ -278,8 +286,10 @@ def decodeLbsWifi = { String sentence, ctx ->
 def decodeCommandResult = { String sentence, ctx ->
     def m = PATTERN_COMMAND_RESULT.matcher(sentence)
     if (!m.find()) return null
+    def session = ctx.session(m.group(1))
+    if (!session) return null
     def pos = ctx.newPosition()
-    ctx.session(m.group(1))
+    pos.deviceId = session.deviceId
     ctx.lastLocation(pos, mkDateDMY(m.group(2).toInteger(), m.group(3).toInteger(), m.group(4).toInteger(),
                                     m.group(5).toInteger(), m.group(6).toInteger(), m.group(7).toInteger()))
     pos.set(Position.KEY_RESULT, m.group(8))
@@ -289,8 +299,10 @@ def decodeCommandResult = { String sentence, ctx ->
 def decodeVin = { String sentence, ctx ->
     def m = PATTERN_VIN.matcher(sentence)
     if (!m.matches()) return null
+    def session = ctx.session(m.group(1))
+    if (!session) return null
     def pos = ctx.newPosition()
-    ctx.session(m.group(1))
+    pos.deviceId = session.deviceId
     ctx.lastLocation(pos, null)
     pos.set(Position.KEY_VIN, m.group(2))
     pos
@@ -299,8 +311,10 @@ def decodeVin = { String sentence, ctx ->
 def decodeBms = { String sentence, ctx ->
     if (sentence.length() < 17) return null
     String id = sentence.substring(1, 13)
-    ctx.session(id)
+    def session = ctx.session(id)
+    if (!session) return null
     def pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
     ctx.lastLocation(pos, null)
     String payload = sentence.substring(17, sentence.length() - 1)
     boolean isBs50 = sentence.substring(13, 17) == "BS50"
@@ -378,8 +392,10 @@ def decodeMain = { String sentence, ctx ->
     String id = m.group(1) != null ? m.group(1) : m.group(2)
     boolean alternative = (m.group(2) != null)
 
-    ctx.session(id)
+    def session = ctx.session(id)
+    if (!session) return null
     def pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
 
     String type = m.group(3)
     String data = m.group(4) != null ? m.group(4) : m.group(5)
@@ -454,6 +470,8 @@ protocol("tk103") {
 
     variant("main") {
 
+        matches { msg -> msg.contains("(") }
+
         scriptedFrame { fb ->
             int n = fb.readableBytes()
             if (n < 2) return null
@@ -482,8 +500,13 @@ protocol("tk103") {
         }
 
         decode { msg, ctx ->
-            def buf = msg as BufReader
-            String raw = buf.readString(buf.readableBytes())
+            String raw
+            if (msg instanceof BufReader) {
+                BufReader b = msg
+                raw = b.readString(b.readableBytes())
+            } else {
+                raw = msg.toString()
+            }
             int paren = raw.indexOf('(')
             if (paren < 0) return null
             String sentence = raw.substring(paren)

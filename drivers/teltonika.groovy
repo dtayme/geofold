@@ -72,6 +72,8 @@ protocol("teltonika") {
             }
 
             // Data frame: skip 4 preamble bytes
+            def session = ctx.session()
+            if (!session) return null
             msg.skip(4)
             def buf = msg
 
@@ -120,6 +122,7 @@ protocol("teltonika") {
                     decodeGh3000Param(pos, id, b, length)
                     return
                 }
+                int before = b.readableBytes()
                 switch (id) {
                     case 1:   pos.set(Position.PREFIX_IN + 1, b.readUByte() > 0); break
                     case 2:   pos.set(Position.PREFIX_IN + 2, b.readUByte() > 0); break
@@ -220,6 +223,9 @@ protocol("teltonika") {
                         pos.set(Position.PREFIX_IO + id, readValue(b, length))
                         break
                 }
+                // Enforce exact consumption of 'length' bytes (mirrors Java's buf.readerIndex(index + length))
+                int delta = length - (before - b.readableBytes())
+                if (delta != 0) b.skip(delta)
             }
 
             def decodeXByteIos = { pos, b ->
@@ -411,6 +417,7 @@ protocol("teltonika") {
 
             for (int i = 0; i < count; i++) {
                 def pos = ctx.newPosition()
+                pos.deviceId = session.deviceId
                 pos.setValid(true)
                 boolean addPosition = true
 
@@ -472,7 +479,7 @@ protocol("teltonika") {
             }
 
             if (positions.isEmpty()) return null
-            return positions.size() == 1 ? positions[0] : positions
+            return positions
         }
     }
 }

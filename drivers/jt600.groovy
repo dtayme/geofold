@@ -73,19 +73,34 @@ def setDateTime = { Calendar cal, int day, int month, int year, int hour, int mi
     cal.set(Calendar.MILLISECOND, 0)
 }
 
+// Mimics BcdUtil.readInteger(buf, n): for even n reads n/2 bytes; for odd n reads (n-1)/2
+// bytes then peeks the high nibble of the next byte without consuming it.
+def bcdInt = { BufReader b, int n ->
+    int r = 0
+    for (int i = 0; i < (n >> 1); i++) {
+        int v = b.readUByte()
+        r = r * 10 + ((v >> 4) & 0xF)
+        r = r * 10 + (v & 0xF)
+    }
+    if ((n & 1) != 0) {
+        r = r * 10 + ((b.getUByte(0) >> 4) & 0xF)
+    }
+    r
+}
+
 def decodeBinaryLocation = { BufReader buf, Position pos ->
-    int day   = Integer.parseInt(buf.readBcd(2))
-    int month = Integer.parseInt(buf.readBcd(2))
-    int year  = Integer.parseInt(buf.readBcd(2)) + 2000
-    int hour  = Integer.parseInt(buf.readBcd(2))
-    int min   = Integer.parseInt(buf.readBcd(2))
-    int sec   = Integer.parseInt(buf.readBcd(2))
+    int day   = bcdInt(buf, 2)
+    int month = bcdInt(buf, 2)
+    int year  = bcdInt(buf, 2) + 2000
+    int hour  = bcdInt(buf, 2)
+    int min   = bcdInt(buf, 2)
+    int sec   = bcdInt(buf, 2)
     Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     setDateTime(cal, day, month, year, hour, min, sec)
     pos.setTime(cal.getTime())
 
-    int latRaw = Integer.parseInt(buf.readBcd(8))
-    int lonRaw = Integer.parseInt(buf.readBcd(9))
+    int latRaw = bcdInt(buf, 8)
+    int lonRaw = bcdInt(buf, 9)   // reads 4 bytes, peeks high nibble of 5th (like BcdUtil)
 
     int flags = buf.readByte() & 0xFF
     pos.setValid(BitUtil.check(flags, 0))
@@ -94,7 +109,7 @@ def decodeBinaryLocation = { BufReader buf, Position pos ->
     pos.setLatitude(BitUtil.check(flags, 1) ? lat : -lat)
     pos.setLongitude(BitUtil.check(flags, 2) ? lon : -lon)
 
-    pos.setSpeed(Integer.parseInt(buf.readBcd(2)))
+    pos.setSpeed(bcdInt(buf, 2))
     pos.setCourse(buf.readUByte() * 2.0)
 }
 
@@ -129,6 +144,7 @@ def decodeBinary = { BufReader buf, ctx ->
     boolean responseRequired = false
     while (buf.remaining() >= 17) {
         Position pos = ctx.newPosition()
+        pos.deviceId = session.deviceId
         decodeBinaryLocation(buf, pos)
 
         if (longFormat) {
@@ -216,6 +232,7 @@ def decodeW01 = { String sentence, ctx ->
     if (!session) return null
 
     Position pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
 
     double lon = m.group(2).toDouble() + m.group(3).toDouble() / 60.0
     if ("W" == m.group(4)) lon = -lon
@@ -251,6 +268,7 @@ def decodeU01 = { String sentence, ctx ->
 
     String type = m.group(2)
     Position pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
 
     Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     cal.set(m.group(5).toInteger() + 2000, m.group(4).toInteger() - 1, m.group(3).toInteger(),
@@ -303,6 +321,7 @@ def decodeP45 = { String sentence, ctx ->
     if (!session) return null
 
     Position pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
 
     Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     cal.set(m.group(4).toInteger() + 2000, m.group(3).toInteger() - 1, m.group(2).toInteger(),
@@ -340,6 +359,7 @@ def decodePeripherals = { BufReader buf, ctx ->
     if (!session) return null
 
     Position pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
 
     // Advance past 6 comma-delimited fields to reach binary data
     int commaCount = 0

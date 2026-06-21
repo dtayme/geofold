@@ -78,7 +78,7 @@ def decodeAlarm4 = { int v ->
 //         13=speed,14=course, 15=day,16=mon,17=year,
 //         18=pdop,19=hdop,20=vdop, 21=io, 22=bat,23=pwr, 24=adc(opt),
 //         25=lac,26=cid, 27=temp, 28=odo
-def RE1 = ~/(?s)\$\$[0-9a-fA-F]{2}(\d+)\|(..)\$GPRMC,(\d{2})(\d{2})(\d{2})\.\d+,([AV]),(\d+)(\d{2}\.\d+),([NS]),(\d+)(\d{2}\.\d+),([EW]),(\d+\.?\d*)?,(\d+\.?\d*)?,(\d{2})(\d{2})(\d{2})[^*]*\*[0-9a-fA-F]{2}\|(\d+\.\d+)\|(\d+\.\d+)\|(\d+\.\d+)\|(\d+)\|\d+\|\d(\d{3})(\d{4})\|(?:(\d+)\|)?[0-9a-fA-F]*([0-9a-fA-F]{4})([0-9a-fA-F]{4})\|(\d+)\|(\d+\.\d+)\|\d+\|.*[0-9a-fA-F]{4}.*/
+def RE1 = ~'(?s)\\$\\$[0-9a-fA-F]{2}(\\d+)\\|(..)\\$GPRMC,(\\d{2})(\\d{2})(\\d{2})\\.\\d+,([AV]),(\\d+)(\\d{2}\\.\\d+),([NS]),(\\d+)(\\d{2}\\.\\d+),([EW]),(\\d+\\.?\\d*)?,(\\d+\\.?\\d*)?,(\\d{2})(\\d{2})(\\d{2})[^*]*\\*[0-9a-fA-F]{2}\\|(\\d+\\.\\d+)\\|(\\d+\\.\\d+)\\|(\\d+\\.\\d+)\\|(\\d+)\\|\\d+\\|\\d(\\d{3})(\\d{4})\\|(?:(\\d+)\\|)?[0-9a-fA-F]*([0-9a-fA-F]{4})([0-9a-fA-F]{4})\\|(\\d+)\\|(\\d+\\.\\d+)\\|\\d+\\|.*[0-9a-fA-F]{4}.*'
 
 // Format 2 (old, no $GPRMC, two pipe groups):
 // $$XX<IMEI>|<alarm><ddmmyy><hhmmss>|<AV>|<latDeg><latMin>|<latHem>|<lonDeg><lonMin>|<lonHem>|<spd?>|<crs?>|hdop|io|<charged><bat2><pwr2>|adc|(lac4)(cid4)|temp|odo|serial|xxxx.*
@@ -138,7 +138,7 @@ def decodeFormat1 = { String s, ctx ->
     pos.set(Position.KEY_PDOP, m.group(18).toDouble())
     pos.set(Position.KEY_HDOP, m.group(19).toDouble())
     pos.set(Position.KEY_VDOP, m.group(20).toDouble())
-    int io = m.group(21).toInteger()
+    int io = Integer.parseInt(m.group(21), 2)
     pos.set(Position.KEY_STATUS, io)
     pos.addAlarm(BitUtil.check(io, 0) ? ALARM_SOS : null)
     pos.set(Position.PREFIX_IN + 3, BitUtil.check(io, 4))
@@ -176,7 +176,7 @@ def decodeFormat2 = { String s, ctx ->
     pos.speed  = m.group(16) ? m.group(16).toDouble() : 0.0
     pos.course = m.group(17) ? m.group(17).toDouble() : 0.0
     pos.set(Position.KEY_HDOP, m.group(18).toDouble())
-    int io = m.group(19).toInteger()
+    int io = Integer.parseInt(m.group(19), 2)
     pos.set(Position.KEY_STATUS, io)
     pos.set(Position.KEY_ANTENNA, BitUtil.check(io, 0))
     pos.set(Position.KEY_CHARGE,  BitUtil.check(io, 1))
@@ -354,7 +354,7 @@ protocol("totem") {
 
         frame scriptedFrame { fb ->
             if (fb.readableBytes() < 10) return null
-            int start = fb.indexOf("$$")
+            int start = fb.indexOf('$$')
             if (start < 0) return null
             int frameLen
             if (fb.getUByte(start + 2) == 0x30) {
@@ -388,7 +388,7 @@ protocol("totem") {
 
             if (sentence.charAt(2) == '0') {
                 String serial = sentence.substring(sentence.length() - 6, sentence.length() - 2)
-                String base = "$$0014AA" + serial
+                String base = '$$0014AA' + serial
                 ctx.ack(base + String.format("%02X", Checksum.xor(base)))
             } else {
                 ctx.ack("ACK OK\r\n")

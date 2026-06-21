@@ -105,17 +105,21 @@ def identifyAndRegister = { byte[] idBytes, ctx ->
         int b = idBytes[i] & 0xFF
         int d1 = (b >> 4) & 0x0F
         if (d1 == 0xF) break
-        sb.append((char)('0' + d1))
+        sb.append((char)(0x30 + d1))
         int d2 = b & 0x0F
         if (d2 == 0xF) break
-        sb.append((char)('0' + d2))
+        sb.append((char)(0x30 + d2))
     }
     String id = sb.toString()
+    def session
     if (id.length() == 14) {
-        ctx.session(id, id + Checksum.luhn(Long.parseLong(id)))
+        String luhnId = id + Checksum.luhn(Long.parseLong(id))
+        session = ctx.session(luhnId)
+        if (!session) session = ctx.session(id)
     } else {
-        ctx.session(id)
+        session = ctx.session(id)
     }
+    return session
 }
 
 def decodeAlarm = { String model, int value ->
@@ -358,6 +362,7 @@ protocol("meiligao") {
                         sb.append((char) b)
                     }
                     Position pos = ctx.newPosition()
+                    pos.deviceId = session.deviceId
                     pos = decodeRegular(pos, sb.toString())
                     if (pos != null) ctx.emit(pos)
                 }
@@ -365,6 +370,7 @@ protocol("meiligao") {
             }
 
             Position position = ctx.newPosition()
+            position.deviceId = session.deviceId
 
             if (command == MSG_ALARM) {
                 int alarmCode = buf.readUByte()

@@ -43,27 +43,27 @@ def utcTime = { int h, int min, int s ->
 
 // Patterns (compiled once)
 // GPRMC: standard + optional extended fields (sats, IMEI, ignition, fuel, battery, params)
-def GPRMC_RE = ~/\$G[PLN]RMC,(\d{2})(\d{2})(\d{2})\.?\d*,([AV]),(\d{2})(\d{2}\.\d+),([NS]),(\d{2,3})(\d{2}\.\d+),([EW]),(\d+\.?\d*)?,(\d+\.?\d*)?,(\d{2})(\d{2})(\d{2}),[^*]*(?:\*[^\s,]+,(\d+),(\d+),([01]),(\d+)(?:,(\d+))?)?((?:,\d+)+)?.*/
+def GPRMC_RE = ~'\\$G[PLN]RMC,(\\d{2})(\\d{2})(\\d{2})\\.?\\d*,([AV]),(\\d{2})(\\d{2}\\.\\d+),([NS]),(\\d{2,3})(\\d{2}\\.\\d+),([EW]),(\\d+\\.?\\d*)?,(\\d+\\.?\\d*)?,(\\d{2})(\\d{2})(\\d{2}),[^*]*(?:\\*[^\\s,]+,(\\d+),(\\d+),([01]),(\\d+)(?:,(\\d+))?)?((?:,\\d+)+)?.*'
 
-def GPGGA_RE = ~/\$G[PLN]GGA,(\d{2})(\d{2})(\d{2})\.?\d*,(\d+)(\d{2}\.\d+),([NS]),(\d+)(\d{2}\.\d+),([EW]),(\d+),(\d+),(\d+\.?\d*),(-?\d+\.?\d*).*/
+def GPGGA_RE = ~'\\$G[PLN]GGA,(\\d{2})(\\d{2})(\\d{2})\\.?\\d*,(\\d+)(\\d{2}\\.\\d+),([NS]),(\\d+)(\\d{2}\\.\\d+),([EW]),(\\d+),(\\d+),(\\d+\\.?\\d*),(-?\\d+\\.?\\d*).*'
 
-def GPGLL_RE = ~/\$G[PLN]GLL,(\d+)(\d{2}\.\d+),([NS]),(\d+)(\d{2}\.\d+),([EW]),(\d{2})(\d{2})(\d{2})\.?\d*,([AV]).*/
+def GPGLL_RE = ~'\\$G[PLN]GLL,(\\d+)(\\d{2}\\.\\d+),([NS]),(\\d+)(\\d{2}\\.\\d+),([EW]),(\\d{2})(\\d{2})(\\d{2})\\.?\\d*,([AV]).*'
 
-def GPRMA_RE = ~/\$GPRMA,([AV]),(\d{2})(\d{2}\.\d+),([NS]),(\d{3})(\d{2}\.\d+),([EW]),(\d+\.?\d*)?,(\d+\.?\d*)?.*/
+def GPRMA_RE = ~'\\$GPRMA,([AV]),(\\d{2})(\\d{2}\\.\\d+),([NS]),(\\d{3})(\\d{2}\\.\\d+),([EW]),(\\d+\\.?\\d*)?,(\\d+\\.?\\d*)?.*'
 
-def TRCCR_RE = ~/\$TRCCR,(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.?\d*,([AV]),(-?\d+\.\d+),(-?\d+\.\d+),(\d+\.\d+),(\d+\.\d+),(-?\d+\.\d+),(\d+\.?\d*).*/
+def TRCCR_RE = ~'\\$TRCCR,(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})\\.?\\d*,([AV]),(-?\\d+\\.\\d+),(-?\\d+\\.\\d+),(\\d+\\.\\d+),(\\d+\\.\\d+),(-?\\d+\\.\\d+),(\\d+\\.?\\d*).*'
 
-def GPIOP_RE = ~/\$GPIOP,[01]{8},[01]{8},\d+\.\d+,\d+\.\d+,\d+\.\d+,\d+\.\d+,(\d+\.\d+),(\d+\.\d+).*/
+def GPIOP_RE = ~'\\$GPIOP,[01]{8},[01]{8},\\d+\\.\\d+,\\d+\\.\\d+,\\d+\\.\\d+,\\d+\\.\\d+,(\\d+\\.\\d+),(\\d+\\.\\d+).*'
 
 def QZE_RE = ~/QZE,(\d{15}),(\d+),(\d{2})(\d{2})(\d{4}),(\d{2})(\d{2})(\d{2}),(-?\d+\.\d+),(-?\d+\.\d+),(\d+),(\d+),([AV]),([01]).*/
 
 // PUBX: index, time, lat, lon, alt, status, hAcc, vAcc, speed, course, vVel, cAge, hdop, vdop, tdop, sats, deviceId, num, checksum
-def PUBX_RE = ~/\$PUBX,(\d+),(\d{2})(\d{2})(\d{2})\.\d+,(\d+)(\d{2}\.\d+),([NS]),(\d+)(\d{2}\.\d+),([EW]),(-?\d+\.\d+),(\S{2}),(\d+\.\d+),\S+,(\d+\.\d+),(\d+\.\d+),\S+,[^,]*,(\d+\.\d+),(\d+\.\d+),\d+\.\d+,(\d+),(\d+),\d+\*\S+.*/
+def PUBX_RE = ~'\\$PUBX,(\\d+),(\\d{2})(\\d{2})(\\d{2})\\.\\d+,(\\d+)(\\d{2}\\.\\d+),([NS]),(\\d+)(\\d{2}\\.\\d+),([EW]),(-?\\d+\\.\\d+),(\\S{2}),(\\d+\\.\\d+),\\S+,(\\d+\\.\\d+),(\\d+\\.\\d+),\\S+,[^,]*,(\\d+\\.\\d+),(\\d+\\.\\d+),\\d+\\.\\d+,(\\d+),(\\d+),\\d+\\*\\S+.*'
 
-def GPTXT_RE = ~/\$GPTXT,NET,(\d+),([^,]+),(-\d+),(\d+) (\d+)\*\S+.*/
+def GPTXT_RE = ~'\\$GPTXT,NET,(\\d+),([^,]+),(-\\d+),(\\d+) (\\d+)\\*\\S+.*'
 
 // WMCS: imei, optional alarm, validity, optional date (ddmmyy), optional time, optional sats, lat, lon, heading, speed, distance
-def WMCS_RE = ~/(?s)\$ID,(\d+),.*?(?:ALARM,(0x[0-9a-fA-F]+),)?.*?GPSE[XHTD],([AV])(?:,D,(\d{2})(\d{2})(\d{2}))?(?:,T,(\d{2})(\d{2})(\d{2}))?(?:,S,(\d+):(\d+))?(?:,La,(-?\d+\.\d+),([NS]))?(?:,Lo,(-?\d+\.\d+),([EW]))?(?:,H,(\d+\.\d+))?(?:,V,(\d+\.\d+))?(?:,DD,(\d+))?.*/
+def WMCS_RE = ~'(?s)\\$ID,(\\d+),.*?(?:ALARM,(0x[0-9a-fA-F]+),)?.*?GPSE[XHTD],([AV])(?:,D,(\\d{2})(\\d{2})(\\d{2}))?(?:,T,(\\d{2})(\\d{2})(\\d{2}))?(?:,S,(\\d+):(\\d+))?(?:,La,(-?\\d+\\.\\d+),([NS]))?(?:,Lo,(-?\\d+\\.\\d+),([EW]))?(?:,H,(\\d+\\.\\d+))?(?:,V,(\\d+\\.\\d+))?(?:,DD,(\\d+))?.*'
 
 def decodeGprmc = { String sentence, session, ctx ->
     def m = GPRMC_RE.matcher(sentence)
@@ -233,7 +233,7 @@ def decodePubx = { String sentence, ctx ->
     def m = PUBX_RE.matcher(sentence)
     if (!m.matches()) return null
 
-    def session = ctx.session(m.group(20))
+    def session = ctx.session(m.group(19))
     if (!session) return null
 
     def pos = ctx.newPosition()
@@ -317,6 +317,14 @@ protocol("t55") {
     variant("main") {
 
         frame readLine()
+
+        matches { msg ->
+            msg.startsWith("\$") ||
+            msg.contains("\$") ||
+            msg.startsWith("QZE,") ||
+            msg.startsWith("IMEI ") ||
+            (msg ==~ /^[0-9A-Fa-f]+$/)
+        }
 
         decode { msg, ctx ->
             String sentence = msg.trim()

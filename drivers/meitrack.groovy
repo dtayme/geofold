@@ -27,7 +27,7 @@ import java.util.TimeZone
 import java.util.regex.Pattern
 
 def PATTERN = Pattern.compile(
-    "\\$\\$." +                                                         // flag
+    '\\$\\$.' +                                                         // flag
     "\\d+," +                                                           // length
     "(\\d+)," +                                                         // 1: imei
     "[0-9a-fA-F]{3}," +                                                // command
@@ -120,6 +120,7 @@ def decodeRegular = { String text, ctx ->
     if (!session) return null
 
     Position pos = ctx.newPosition()
+    pos.deviceId = session.deviceId
 
     int event = m.group(2).toInteger()
     pos.set(Position.KEY_EVENT, event)
@@ -130,7 +131,7 @@ def decodeRegular = { String text, ctx ->
     pos.setLongitude(m.group(4).toDouble())
 
     Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-    cal.set(m.group(7).toInteger() + 2000, m.group(6).toInteger() - 1, m.group(5).toInteger(),
+    cal.set(m.group(5).toInteger() + 2000, m.group(6).toInteger() - 1, m.group(7).toInteger(),
             m.group(8).toInteger(), m.group(9).toInteger(), m.group(10).toInteger())
     cal.set(Calendar.MILLISECOND, 0)
     pos.setTime(cal.getTime())
@@ -218,6 +219,7 @@ def decodeBinaryC = { BufReader buf, String imei, String flag, ctx ->
     List positions = []
     while (buf.remaining() >= 0x34) {
         Position pos = ctx.newPosition()
+        pos.deviceId = session.deviceId
 
         pos.set(Position.KEY_EVENT, buf.readUByte())
 
@@ -271,6 +273,7 @@ def decodeBinaryE = { BufReader buf, String imei, ctx ->
         Position pos = ctx.newPosition()
         Network network = new Network()
 
+        pos.deviceId = session.deviceId
         int dataLength = (int) buf.readUShortLE()
         int remainingAtEnd = buf.remaining() - dataLength
         buf.readUShortLE()  // record index

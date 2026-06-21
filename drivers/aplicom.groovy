@@ -72,7 +72,7 @@ def decodeEB = { pos, BufReader b ->
                 b.skip(17); break
             default: break
         }
-        if (b.readableBytes() > targetRemaining) b.skip(b.readableBytes() - targetRemaining)
+        if (targetRemaining >= 0) b.skip(b.readableBytes() - targetRemaining)
     }
 }
 
@@ -427,8 +427,10 @@ protocol("aplicom") {
                 selector = ((buf.readUByte() & 0xFF) << 16) | ((buf.readUByte() & 0xFF) << 8) | (buf.readUByte() & 0xFF)
             }
 
-            ctx.session(imei)
+            def session = ctx.session(imei)
+            if (!session) return null
             def pos = ctx.newPosition()
+            pos.deviceId = session.deviceId
             int event = buf.readUByte()
             pos.set(Position.KEY_EVENT, event)
             pos.set("eventInfo", (int) buf.readUByte())
