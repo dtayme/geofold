@@ -9,7 +9,6 @@ import org.traccar.model.Command
 import org.traccar.model.Network
 import org.traccar.model.Position
 
-import groovy.json.JsonOutput
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.Calendar
@@ -99,21 +98,22 @@ def buildMpipResponse = { byte[] idBytes, int type ->
 // ── position reader ────────────────────────────────────────────────────────
 
 def readPos = { BufReader buf, ctx ->
-    int yy = buf.readUByte(); int mo = buf.readUByte(); int dd = buf.readUByte()
+    int dd = buf.readUByte(); int mo = buf.readUByte(); int yy = buf.readUByte()
     int hh = buf.readUByte(); int mi = buf.readUByte(); int ss = buf.readUByte()
     Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     cal.set(2000 + yy, mo - 1, dd, hh, mi, ss)
     cal.set(Calendar.MILLISECOND, 0)
-    long latRaw = buf.readUInt()
-    long lonRaw = buf.readUInt()
-    int speedRaw = buf.readUShort()
-    int courseRaw = buf.readUShort()
+    long latRaw = buf.readUIntLE()
+    long lonRaw = buf.readUIntLE()
+    int speedRaw = buf.readUShortLE()
+    int courseRaw = buf.readUShortLE()
     int flags = buf.readUByte()
     double lat = latRaw / 3600000.0
     double lon = lonRaw / 3600000.0
-    if ((flags & 0x01) == 0) lon = -lon
     if ((flags & 0x02) == 0) lat = -lat
+    if ((flags & 0x01) == 0) lon = -lon
     def pos = ctx.newPosition()
+    pos.deviceId = ctx.session()?.deviceId ?: 0
     pos.setTime(cal.getTime())
     pos.setValid((flags & 0x0C) > 0)
     pos.set(Position.KEY_SATELLITES, (flags >> 4) & 0x0F)
@@ -222,7 +222,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
     // position types
     if (type == 0x1001 || type == 0x1002 || type == 0x4001 || type == 0xB001) {
         if (type == 0xB001) buf.skip(2)
-        else buf.skip(1)  // historical flag
+        else if (type == 0x4001) buf.skip(1)  // historical flag (only for GPS message)
         Map stat = readStat(buf)
         int count = buf.readUByte()
         List positions = []
@@ -233,8 +233,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
     }
 
     if (type == 0x4007) {
-        buf.skip(1)
-        long alarmIdx = buf.readUInt()
+        long alarmIdx = buf.readUIntLE()
         ByteArrayOutputStream rc = new ByteArrayOutputStream()
         rc.write((int)(alarmIdx & 0xFF)); rc.write((int)((alarmIdx >> 8) & 0xFF))
         rc.write((int)((alarmIdx >> 16) & 0xFF)); rc.write((int)((alarmIdx >> 24) & 0xFF))
@@ -274,6 +273,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
 
     if (type == 0x4002) {
         def pos = ctx.newPosition()
+        pos.deviceId = ctx.session()?.deviceId ?: 0
         ctx.lastLocation(pos, null)
         applyStat(readStat(buf), [pos])
         buf.skip(2)  // sample rate
@@ -283,6 +283,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
 
     if (type == 0x4003) {
         def pos = ctx.newPosition()
+        pos.deviceId = ctx.session()?.deviceId ?: 0
         ctx.lastLocation(pos, null)
         applyStat(readStat(buf), [pos])
         buf.skip(2)  // sample rate
@@ -295,12 +296,19 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
                 z: buf.readShort() * 0.015625
             ])
         }
-        pos.set(Position.KEY_G_SENSOR, JsonOutput.toJson(readings))
+        def sb = new StringBuilder('[')
+        readings.eachWithIndex { r, i ->
+            if (i > 0) sb.append(',')
+            sb.append('[').append(r.x).append(',').append(r.y).append(',').append(r.z).append(']')
+        }
+        sb.append(']')
+        pos.set(Position.KEY_G_SENSOR, sb.toString())
         return pos
     }
 
     if (type == 0x4006 || type == 0x400B) {
         def pos = ctx.newPosition()
+        pos.deviceId = ctx.session()?.deviceId ?: 0
         ctx.lastLocation(pos, null)
         applyStat(readStat(buf), [pos])
         buf.skip(1)  // flag
@@ -309,10 +317,10 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
         for (int i = 0; i < count; i++) {
             int code
             if (type == 0x400B) {
-                code = buf.readUShort()
+                code = buf.readUShortLE()
                 buf.skip(1); buf.skip(1)  // attribute, occurrence
             } else {
-                code = buf.readUShort()
+                code = buf.readUShortLE()
             }
             String decoded = ObdDecoder.decodeCode(code)
             if (decoded) codes.add(decoded)
@@ -324,6 +332,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
 
     if (type == 0x4005) {
         def pos = ctx.newPosition()
+        pos.deviceId = ctx.session()?.deviceId ?: 0
         ctx.lastLocation(pos, null)
         applyStat(readStat(buf), [pos])
         buf.skip(1)
@@ -333,6 +342,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
 
     if (type == 0x4008) {
         def pos = ctx.newPosition()
+        pos.deviceId = ctx.session()?.deviceId ?: 0
         ctx.lastLocation(pos, null)
         applyStat(readStat(buf), [pos])
         int lac = buf.readUShort()
@@ -354,6 +364,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
 
     if (type == 0xA002) {
         def pos = ctx.newPosition()
+        pos.deviceId = ctx.session()?.deviceId ?: 0
         ctx.lastLocation(pos, null)
         buf.skip(2)  // index
         int respCount = buf.readUByte()
@@ -363,7 +374,7 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
         int successCount = buf.readUByte()
         for (int i = 0; i < successCount; i++) {
             buf.skip(2)  // tag
-            int rlen = buf.readUShort()
+            int rlen = buf.readUShortLE()
             String result = buf.readString(rlen)
             pos.set(Position.KEY_RESULT, result)
         }
@@ -378,29 +389,35 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
         List positions = []
         for (int i = 0; i < count; i++) positions.add(readPos(buf, ctx))
         applyStat(stat, positions)
-        def pos = positions.isEmpty() ? ctx.newPosition() : positions[0]
-        if (positions.isEmpty()) ctx.lastLocation(pos, null)
+        def pos
+        if (positions.isEmpty()) {
+            pos = ctx.newPosition()
+            pos.deviceId = ctx.session()?.deviceId ?: 0
+            ctx.lastLocation(pos, null)
+        } else {
+            pos = positions[0]
+        }
         while (buf.readableBytes() > 4) {
-            int tag = buf.readUShort()
-            int tagLen = buf.readUShort()
+            int tag = buf.readUShortLE()
+            int tagLen = buf.readUShortLE()
             switch (tag) {
                 case 0x0002:
                     int pidCount = buf.readUByte()
                     for (int i = 0; i < pidCount; i++) {
-                        int pidTag = buf.readUShort()
-                        int pidLen = buf.readUShort()
+                        int pidTag = buf.readUShortLE()
+                        int pidLen = buf.readUShortLE()
                         pos.set("pid" + pidTag, buf.readHex(pidLen))
                     }
                     break
                 case 0x0006:
                     buf.skip(1)
                     int fc = buf.readUByte()
-                    for (int i = 1; i <= fc; i++) pos.set("fault$i", buf.readUShort())
+                    for (int i = 1; i <= fc; i++) pos.set("fault$i", buf.readUShortLE())
                     break
                 case 0x000B:
                     buf.skip(1)
                     int fc2 = buf.readUByte()
-                    for (int i = 1; i <= fc2; i++) pos.set("fault$i", buf.readUInt())
+                    for (int i = 1; i <= fc2; i++) pos.set("fault$i", buf.readUIntLE())
                     buf.skip(2)
                     break
                 case 0x0007:
@@ -414,16 +431,16 @@ def decodeSc = { int type, BufReader buf, byte[] idBytes, int version, ctx ->
                     }
                     break
                 case 0x0010:
-                    pos.set(Position.KEY_DEVICE_TEMP, buf.readShort() / 10.0)
+                    pos.set(Position.KEY_DEVICE_TEMP, buf.readShortLE() / 10.0)
                     break
                 case 0x0011: case 0x0012: case 0x0013: case 0x0014:
-                    pos.set(Position.PREFIX_TEMP + (tag - 0x0010), buf.readShort() / 10.0)
+                    pos.set(Position.PREFIX_TEMP + (tag - 0x0010), buf.readShortLE() / 10.0)
                     break
                 case 0x0020:
-                    pos.set(Position.KEY_POWER, buf.readUShort() / 100.0)
+                    pos.set(Position.KEY_POWER, buf.readUShortLE() / 100.0)
                     break
                 case 0x0021:
-                    pos.set(Position.KEY_BATTERY, buf.readUShort() / 100.0)
+                    pos.set(Position.KEY_BATTERY, buf.readUShortLE() / 100.0)
                     break
                 default:
                     buf.skip(tagLen)
@@ -536,7 +553,8 @@ protocol("castel") {
 
             byte[] idBytes = buf.readBytes(20)
             String id = new String(idBytes, StandardCharsets.US_ASCII).trim()
-            ctx.session(id)
+            def session = ctx.session(id)
+            if (!session) return null
 
             int type = buf.readUShort()
 
