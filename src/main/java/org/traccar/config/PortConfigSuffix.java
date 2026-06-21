@@ -27,7 +27,6 @@ import org.traccar.protocol.Mta6Protocol;
 import org.traccar.protocol.NavisProtocol;
 import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.protocol.SuntechProtocol;
-import org.traccar.protocol.TeltonikaProtocol;
 
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +45,6 @@ public class PortConfigSuffix extends ConfigSuffix<Integer> {
         put(Jt808Protocol.class, 5015);
         put(NavisProtocol.class, 5019);
         put(Gt06Protocol.class, 5023);
-        put(TeltonikaProtocol.class, 5027);
         put(Mta6Protocol.class, 5028);
         put(AtrackProtocol.class, 5044);
         put(OsmAndProtocol.class, 5055);
