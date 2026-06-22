@@ -3,9 +3,12 @@
 
 package org.traccar.driver;
 
+import io.netty.channel.Channel;
 import org.traccar.config.Keys;
 import org.traccar.helper.model.AttributeUtil;
 import org.traccar.model.Command;
+
+import java.util.Map;
 
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -34,10 +37,21 @@ public final class EncodeContext {
 
     private final DriverProtocolEncoder encoder;
     private final Command command;
+    private final Channel channel;
 
-    EncodeContext(DriverProtocolEncoder encoder, Command command) {
+    EncodeContext(DriverProtocolEncoder encoder, Command command, Channel channel) {
         this.encoder = encoder;
         this.command = command;
+        this.channel = channel;
+    }
+
+    /**
+     * Returns the channel-scoped key-value store, shared with decode closures on
+     * the same connection. Useful for reading state written by the decode closure
+     * (e.g. detected protocol variant, device prefix).
+     */
+    public Map<String, Object> store() {
+        return ChannelStore.get(channel);
     }
 
     /** Returns the device's unique ID (IMEI) for the current command. */

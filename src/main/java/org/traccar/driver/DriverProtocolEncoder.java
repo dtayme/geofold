@@ -42,7 +42,7 @@ public class DriverProtocolEncoder extends BaseProtocolEncoder {
 
         for (VariantDefinition variant : driver.getVariants()) {
             if (variant.getName().equals(variantName) && variant.getEncodeClosure() != null) {
-                EncodeContext ctx = new EncodeContext(this, command);
+                EncodeContext ctx = new EncodeContext(this, command, channel);
                 Object result = variant.getEncodeClosure().call(command, ctx);
                 return result;
             }
