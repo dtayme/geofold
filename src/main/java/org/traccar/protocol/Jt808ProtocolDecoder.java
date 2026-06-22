@@ -1292,12 +1292,40 @@ public class Jt808ProtocolDecoder extends BaseProtocolDecoder {
         return position;
     }
 
+    private static double convertJt600Coordinate(int raw) {
+        int degrees = raw / 1000000;
+        double minutes = (raw % 1000000) / 10000.0;
+        return degrees + minutes / 60;
+    }
+
+    private static void decodeBinaryLocation(ByteBuf buf, Position position) {
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDay(BcdUtil.readInteger(buf, 2))
+                .setMonth(BcdUtil.readInteger(buf, 2))
+                .setYear(BcdUtil.readInteger(buf, 2))
+                .setHour(BcdUtil.readInteger(buf, 2))
+                .setMinute(BcdUtil.readInteger(buf, 2))
+                .setSecond(BcdUtil.readInteger(buf, 2));
+        position.setTime(dateBuilder.getDate());
+
+        double latitude = convertJt600Coordinate(BcdUtil.readInteger(buf, 8));
+        double longitude = convertJt600Coordinate(BcdUtil.readInteger(buf, 9));
+
+        byte flags = buf.readByte();
+        position.setValid(BitUtil.check(flags, 0));
+        position.setLatitude(BitUtil.check(flags, 1) ? latitude : -latitude);
+        position.setLongitude(BitUtil.check(flags, 2) ? longitude : -longitude);
+
+        position.setSpeed(BcdUtil.readInteger(buf, 2));
+        position.setCourse(buf.readUnsignedByte() * 2.0);
+    }
+
     private Position decodeLocation2(DeviceSession deviceSession, ByteBuf buf, int type) {
 
         Position position = new Position(getProtocolName());
         position.setDeviceId(deviceSession.getDeviceId());
 
-        Jt600ProtocolDecoder.decodeBinaryLocation(buf, position);
+        decodeBinaryLocation(buf, position);
         position.setValid(type != MSG_LOCATION_REPORT_BLIND);
 
         position.set(Position.KEY_RSSI, buf.readUnsignedByte());
