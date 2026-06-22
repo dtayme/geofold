@@ -42,10 +42,8 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.traccar.BaseProtocol;
 import org.traccar.LifecycleObject;
 import org.traccar.api.CorsResponseFilter;
-import org.traccar.protocol.OsmAndProtocol;
 import org.traccar.api.DateParameterConverterProvider;
 import org.traccar.api.ResourceErrorHandler;
 import org.traccar.api.StreamWriter;
@@ -116,7 +114,7 @@ public class WebServer implements LifecycleObject {
 
     private void initClientProxy(ServletContextHandler servletHandler) {
         int port = config.getInteger(
-                Keys.PROTOCOL_PORT.withPrefix(BaseProtocol.nameFromClass(OsmAndProtocol.class)));
+                Keys.PROTOCOL_PORT.withPrefix("osmand"));
         if (port > 0) {
             ServletHolder proxy = new ServletHolder(AsyncProxyServlet.Transparent.class);
             proxy.setInitParameter("proxyTo", "http://localhost:" + port);

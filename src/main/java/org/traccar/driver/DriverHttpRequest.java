@@ -86,4 +86,9 @@ public final class DriverHttpRequest {
             return reader.readArray();
         }
     }
+
+    /** Parses the request body as URL-encoded form parameters (for POST form submissions). */
+    public Map<String, List<String>> bodyParams() {
+        return new QueryStringDecoder(content(), false).parameters();
+    }
 }

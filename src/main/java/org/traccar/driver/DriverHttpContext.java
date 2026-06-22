@@ -106,6 +106,16 @@ public final class DriverHttpContext {
         responded = true;
     }
 
+    /** Sends HTTP 100 Continue without marking the response as sent (used by MTA6-style devices). */
+    public void sendContinue() {
+        decoder.sendHttpResponse(channel, 100, (String) null, null);
+    }
+
+    public void xml(int status, String body) {
+        decoder.sendHttpResponse(channel, status, body, "text/xml");
+        responded = true;
+    }
+
     public Command nextQueuedCommand(long deviceId) {
         return decoder.nextQueuedCommand(deviceId);
     }
